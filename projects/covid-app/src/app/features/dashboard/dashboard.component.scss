@@ -1,0 +1,11 @@
+.country {
+  stroke-width: 1;
+  stroke: darkslategrey;
+  fill: white;
+  transition: all 0.25s ease-in-out;
+}
+
+.country:hover {
+  cursor: pointer;
+  fill: #555555;
+}
