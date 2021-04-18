@@ -6,5 +6,18 @@
 */
 {
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./projects/covid-app/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/covid-app/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/covid-charts-lib/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/covid-charts-lib/tsconfig.spec.json"
+    }
+]
 }
