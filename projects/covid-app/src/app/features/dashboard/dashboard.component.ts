@@ -47,13 +47,38 @@ export class DashboardComponent implements OnInit {
           .append('path')
           .attr('d', path)
           .attr('class', 'country')
-          .on('mousedown', (e,d) => {
+          .on('mousedown', (event,d) => {
+            const node = d3.select(event.currentTarget);
+            // node.attr('transform', 'scale(1.5)')
+            /* transform="translate(-33.925962254490855,-144.64600554243407) scale(1.5932801925711724)"*/
             console.log(d);
-            console.log(e);
+            console.log(event);
             console.log(d.properties.name)
+
+            // https://stackoverflow.com/questions/25310390/how-does-path-bounds-work
+            var bounds = path.bounds(d), 
+            dx = bounds[1][0] - bounds[0][0], 
+            dy = bounds[1][1] - bounds[0][1],
+            x = (bounds[0][0] + bounds[1][0]) / 2,
+            y = (bounds[0][1] + bounds[1][1]) / 2,
+                    scale = .9 / Math.max(dx / width, dy / height),
+            translate = [width / 2 - scale * x, height / 2 - scale * y];
+            
+            node.attr('transform',`translate(${translate[0]}, ${translate[1]}) scale(${scale})`)
+
+            
           });
       });
   }
+
+  // Adding circles overlaying countries for population
+  // Todo http://bl.ocks.org/almccon/1bcde7452450c153d8a0684085f249fd
+  // ? Another https://stackoverflow.com/questions/58649544/d3-js-v5-unable-to-get-data-points-to-show-on-map-of-us
+
+  // this centers a map
+// TODO: https://stackoverflow.com/questions/14492284/center-a-map-in-d3-given-a-geojson-object
+
+
 
 
   /* show / hide states*/
