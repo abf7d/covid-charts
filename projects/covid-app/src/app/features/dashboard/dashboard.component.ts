@@ -20,6 +20,22 @@ export class DashboardComponent implements OnInit {
     const width = 1000;
     const height = 700;
 
+
+  
+  // The Map
+  // const map = mapContainer
+    // .append('svg')
+    // .attr('padding', 'none')
+    // .attr('height', height)
+    // .attr('width', width)
+    // .attr('border', '1px solid black')
+    // .attr('margin-left', '16px')
+    // .attr('preserveAspectRatio', 'xMinYMin meet')
+    // // This is for when you zoom on the background, it will zoom
+    // .call(zoom)
+    // // This is going to be the country group
+    // .append('g');
+
     let svg = d3.select(this.chart.nativeElement).append('svg');
 
     var projection = d3
@@ -68,6 +84,14 @@ export class DashboardComponent implements OnInit {
 
             
           });
+
+          const zoom = d3.zoom()
+          .on('zoom', (event) => {
+            svgG.attr('transform', event.transform);
+          })
+          .scaleExtent([1, 40]);
+          svg.call(zoom);
+      
       });
   }
 
