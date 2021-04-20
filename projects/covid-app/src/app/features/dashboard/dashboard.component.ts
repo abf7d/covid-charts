@@ -51,6 +51,7 @@ export class DashboardComponent implements OnInit {
 
     // TODO: Get states also and show on zoom:
     //TODO:  http://bl.ocks.org/MaciejKus/61e9ff1591355b00c1c1caf31e76a668
+    // TODO: above data comes from github: https://github.com/owid/covid-19-data/tree/master/public/data/
     this.http
       .get(
         '../../../assets/data/countries.json' /*https://gist.githubusercontent.com/GordyD/49654901b07cb764c34f/raw/27eff6687f677c984a11f25977adaa4b9332a2a9/countries-and-states.json'*/ /*('https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-50m.json'*/
