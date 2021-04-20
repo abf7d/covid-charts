@@ -1,5 +1,11 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, ElementRef, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  ViewEncapsulation,
+} from '@angular/core';
 import * as d3 from 'd3';
 import * as topojson from 'topojson';
 
@@ -7,7 +13,7 @@ import * as topojson from 'topojson';
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
 })
 export class DashboardComponent implements OnInit {
   @ViewChild('chart', { static: true }) chart: ElementRef;
@@ -20,10 +26,8 @@ export class DashboardComponent implements OnInit {
     const width = 1000;
     const height = 700;
 
-
-  
-  // The Map
-  // const map = mapContainer
+    // The Map
+    // const map = mapContainer
     // .append('svg')
     // .attr('padding', 'none')
     // .attr('height', height)
@@ -45,91 +49,132 @@ export class DashboardComponent implements OnInit {
 
     var path = d3.geoPath().projection(projection);
 
-    // TODO: Get states also and show on zoom: 
+    // TODO: Get states also and show on zoom:
     //TODO:  http://bl.ocks.org/MaciejKus/61e9ff1591355b00c1c1caf31e76a668
     this.http
-      .get('../../../assets/data/countries.json' /*https://gist.githubusercontent.com/GordyD/49654901b07cb764c34f/raw/27eff6687f677c984a11f25977adaa4b9332a2a9/countries-and-states.json'*/ /*('https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-50m.json'*/ )
+      .get(
+        '../../../assets/data/countries.json' /*https://gist.githubusercontent.com/GordyD/49654901b07cb764c34f/raw/27eff6687f677c984a11f25977adaa4b9332a2a9/countries-and-states.json'*/ /*('https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-50m.json'*/
+      )
       .subscribe((world) => {
         console.log(world);
         let svgG = svg.attr('width', width).attr('height', height).append('g');
 
-       
-
-        const countries = topojson.feature(world, (world as any).objects.countries).features;
+        const countries = topojson.feature(
+          world,
+          (world as any).objects.countries
+        ).features;
         svgG
           .selectAll('path')
-          .data( countries )
+          .data(countries)
           .enter()
           .append('path')
           .attr('d', path)
           .attr('class', 'country')
-          .on('mousedown', (event,d) => {
+          .on('mousedown', (event, d) => {
             const node = d3.select(event.currentTarget);
             // node.attr('transform', 'scale(1.5)')
             /* transform="translate(-33.925962254490855,-144.64600554243407) scale(1.5932801925711724)"*/
             console.log(d);
             console.log(event);
-            console.log(d.properties.name)
+            console.log(d.properties.name);
 
             // https://stackoverflow.com/questions/25310390/how-does-path-bounds-work
-            var bounds = path.bounds(d), 
-            dx = bounds[1][0] - bounds[0][0], 
-            dy = bounds[1][1] - bounds[0][1],
-            x = (bounds[0][0] + bounds[1][0]) / 2,
-            y = (bounds[0][1] + bounds[1][1]) / 2,
-                    scale = .9 / Math.max(dx / width, dy / height),
-            translate = [width / 2 - scale * x, height / 2 - scale * y];
-            
-            node.attr('transform',`translate(${translate[0]}, ${translate[1]}) scale(${scale})`)
+            var bounds = path.bounds(d),
+              dx = bounds[1][0] - bounds[0][0],
+              dy = bounds[1][1] - bounds[0][1],
+              x = (bounds[0][0] + bounds[1][0]) / 2,
+              y = (bounds[0][1] + bounds[1][1]) / 2,
+              scale = 0.9 / Math.max(dx / width, dy / height),
+              translate = [width / 2 - scale * x, height / 2 - scale * y];
 
-            
+            node.attr(
+              'transform',
+              `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
+            );
           });
 
-          const zoom = d3.zoom()
+        const zoom = d3
+          .zoom()
           .on('zoom', (event) => {
             svgG.attr('transform', event.transform);
           })
           .scaleExtent([1, 40]);
-          svg.call(zoom);
-      
+        svg.call(zoom);
 
-         const states = topojson.feature(world, (world as any).objects.states).features;
+        const states = topojson.feature(world, (world as any).objects.states)
+          .features;
 
-
-          // console.log((world as any).objects)
-          svgG.append("g")
-          .attr("class", "boundary state hidden")
-        .selectAll("boundary")
+        // console.log((world as any).objects)
+        svgG
+          .append('g')
+          .attr('class', 'boundary state hidden')
+          .selectAll('boundary')
           .data(states)
-          .enter().append("path")
-          .attr("name", function(d) { return d.properties.name;})
-          .attr("id", function(d) { return d.id;})
+          .enter()
+          .append('path')
+          .attr('name', function (d) {
+            return d.properties.name;
+          })
+          .attr('id', function (d) {
+            return d.id;
+          })
           // .on('click', selected)
           // .on("mousemove", showTooltip)
           // .on("mouseout",  function(d,i) {
           //     tooltip.classed("hidden", true);
           //  })
-          .attr("d", path);
+          .attr('d', path);
       });
 
+      /*
+    function zoomed() {
+      var t = d3.event.translate;
+      s = d3.event.scale;
+      var h = 0;
 
+      t[0] = Math.min(
+        (width / height) * (s - 1),
+        Math.max(width * (1 - s), t[0])
+      );
 
+      t[1] = Math.min(
+        h * (s - 1) + h * s,
+        Math.max(height * (1 - s) - h * s, t[1])
+      );
+
+      zoom.translate(t);
+      if (s === 1 && mouseClicked) {
+        rotateMap(d3.mouse(this)[0]);
+        return;
       }
 
-    
+      g.attr('transform', 'translate(' + t + ')scale(' + s + ')');
+
+      //adjust the stroke width based on zoom level
+      d3.selectAll('.boundary').style('stroke-width', 1 / s);
+
+      //toggle state/USA visability
+      if (s > 1.5) {
+        states.classed('hidden', false);
+        usa.classed('hidden', true);
+        canada.classed('hidden', true);
+      } else {
+        states.classed('hidden', true);
+        usa.classed('hidden', false);
+        canada.classed('hidden', false);
+      }
+    }
+  }*/
 
   // Adding circles overlaying countries for population
   // Todo http://bl.ocks.org/almccon/1bcde7452450c153d8a0684085f249fd
   // ? Another https://stackoverflow.com/questions/58649544/d3-js-v5-unable-to-get-data-points-to-show-on-map-of-us
 
   // this centers a map
-// TODO: https://stackoverflow.com/questions/14492284/center-a-map-in-d3-given-a-geojson-object
-
-
-
+  // TODO: https://stackoverflow.com/questions/14492284/center-a-map-in-d3-given-a-geojson-object
 
   /* show / hide states*/
-   //TODO:  http://bl.ocks.org/MaciejKus/61e9ff1591355b00c1c1caf31e76a668
+  //TODO:  http://bl.ocks.org/MaciejKus/61e9ff1591355b00c1c1caf31e76a668
   /*
   var width = 962,
         rotated = 90,
