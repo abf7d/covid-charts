@@ -53,7 +53,7 @@ export class DashboardComponent implements OnInit {
         console.log(world);
         let svgG = svg.attr('width', width).attr('height', height).append('g');
 
-
+       
 
         const countries = topojson.feature(world, (world as any).objects.countries).features;
         svgG
@@ -92,8 +92,31 @@ export class DashboardComponent implements OnInit {
           .scaleExtent([1, 40]);
           svg.call(zoom);
       
+
+         const states = topojson.feature(world, (world as any).objects.states).features;
+
+
+          // console.log((world as any).objects)
+          svgG.append("g")
+          .attr("class", "boundary state hidden")
+        .selectAll("boundary")
+          .data(states)
+          .enter().append("path")
+          .attr("name", function(d) { return d.properties.name;})
+          .attr("id", function(d) { return d.id;})
+          // .on('click', selected)
+          // .on("mousemove", showTooltip)
+          // .on("mouseout",  function(d,i) {
+          //     tooltip.classed("hidden", true);
+          //  })
+          .attr("d", path);
       });
-  }
+
+
+
+      }
+
+    
 
   // Adding circles overlaying countries for population
   // Todo http://bl.ocks.org/almccon/1bcde7452450c153d8a0684085f249fd
