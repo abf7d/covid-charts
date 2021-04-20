@@ -126,7 +126,8 @@ export class DashboardComponent implements OnInit {
           .attr('d', path);
       });
 
-      /*
+      /* // ! show states on zoom level
+      
     function zoomed() {
       var t = d3.event.translate;
       s = d3.event.scale;
@@ -165,6 +166,8 @@ export class DashboardComponent implements OnInit {
       }
     }
   }*/
+
+  // TODO: Data location: https://ourworldindata.org/coronavirus-source-data
 
   // Adding circles overlaying countries for population
   // Todo http://bl.ocks.org/almccon/1bcde7452450c153d8a0684085f249fd
