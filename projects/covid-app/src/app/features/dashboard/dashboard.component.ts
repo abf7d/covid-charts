@@ -34,7 +34,7 @@ export class DashboardComponent implements OnInit {
     }
     return value;
   }
-
+  selected: any;
   createChart() {
     const width = 1000;
     const height = 700;
@@ -76,25 +76,31 @@ export class DashboardComponent implements OnInit {
           .attr('class', 'country')
           .on('mousedown', (event, d) => {
             const node = d3.select(event.currentTarget);
-            // node.attr('transform', 'scale(1.5)')
-            /* transform="translate(-33.925962254490855,-144.64600554243407) scale(1.5932801925711724)"*/
-            console.log(d);
-            console.log(event);
-            console.log(d.properties.name);
+            if (this.selected === d) {
+              this.selected = null;
+              node.attr('transform', `translate(0, 0) scale(1)`);
+            } else {
+              this.selected = d;
+              // node.attr('transform', 'scale(1.5)')
+              /* transform="translate(-33.925962254490855,-144.64600554243407) scale(1.5932801925711724)"*/
+              console.log(d);
+              console.log(event);
+              console.log(d.properties.name);
 
-            // https://stackoverflow.com/questions/25310390/how-does-path-bounds-work
-            var bounds = path.bounds(d),
-              dx = bounds[1][0] - bounds[0][0],
-              dy = bounds[1][1] - bounds[0][1],
-              x = (bounds[0][0] + bounds[1][0]) / 2,
-              y = (bounds[0][1] + bounds[1][1]) / 2,
-              scale = 0.9 / Math.max(dx / width, dy / height),
-              translate = [width / 2 - scale * x, height / 2 - scale * y];
+              // https://stackoverflow.com/questions/25310390/how-does-path-bounds-work
+              var bounds = path.bounds(d),
+                dx = bounds[1][0] - bounds[0][0],
+                dy = bounds[1][1] - bounds[0][1],
+                x = (bounds[0][0] + bounds[1][0]) / 2,
+                y = (bounds[0][1] + bounds[1][1]) / 2,
+                scale = 0.9 / Math.max(dx / width, dy / height),
+                translate = [width / 2 - scale * x, height / 2 - scale * y];
 
-            node.attr(
-              'transform',
-              `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
-            );
+              node.attr(
+                'transform',
+                `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
+              );
+            }
           });
 
         const zoom = d3
