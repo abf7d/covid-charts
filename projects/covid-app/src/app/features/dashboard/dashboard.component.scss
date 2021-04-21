@@ -1,18 +1,20 @@
-.country, .state {
+.country,
+.state {
   stroke-width: 1;
   stroke: darkslategrey;
   fill: white;
   transition: all 0.25s ease-in-out;
 }
 
-.country:hover, .state:hover {
+.country:hover,
+.state:hover {
   cursor: pointer;
   fill: #555555;
 }
 
 .hidden {
-    display: none;
+  display: none;
 }
 mat-slider {
-    width: 300px;
-  }
+  width: 300px;
+}
