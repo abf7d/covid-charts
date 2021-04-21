@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import * as d3 from 'd3';
 import * as topojson from 'topojson';
-
+import {FormGroup, FormControl} from '@angular/forms';
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -23,7 +23,21 @@ export class DashboardComponent implements OnInit {
     this.createChart();
   }
 
-  
+
+
+
+  range = new FormGroup({
+    start: new FormControl(),
+    end: new FormControl()
+  });
+  formatLabel(value: number) {
+    if (value >= 1000) {
+      return Math.round(value / 1000) + 'k';
+    }
+
+    return value;
+  }
+
   createChart() {
     const width = 1000;
     const height = 700;
