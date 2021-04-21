@@ -22,6 +22,8 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.createChart();
   }
+
+  
   createChart() {
     const width = 1000;
     const height = 700;
@@ -59,6 +61,8 @@ export class DashboardComponent implements OnInit {
       .subscribe((world) => {
         console.log(world);
         let svgG = svg.attr('width', width).attr('height', height).append('g');
+
+        this.http.get('../../../assets/data/owid-covid-data.json').subscribe(console.log)
 
         const countries = topojson.feature(
           world,
@@ -165,8 +169,8 @@ export class DashboardComponent implements OnInit {
         usa.classed('hidden', false);
         canada.classed('hidden', false);
       }
-    }
-  }*/
+    }*/
+  }
 
   // TODO: Data location: https://ourworldindata.org/coronavirus-source-data
 
