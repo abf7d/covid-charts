@@ -132,7 +132,7 @@ export class DashboardComponent implements OnInit {
       })
       .each(function (d) {
         const node = d3.select(this);
-        var t = d3.transition().duration(400).ease(d3.easeLinear);
+        var t = d3.transition().duration(100).ease(d3.easeLinear);
         if (d.selected) {
           
           // .ease(d3.easeLinear);
@@ -150,6 +150,7 @@ export class DashboardComponent implements OnInit {
 
           node
             .transition(t)
+            .delay(700) 
             .attr(
               'transform',
               `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
@@ -170,6 +171,7 @@ export class DashboardComponent implements OnInit {
             `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
           )
           .transition(t)
+          .delay(700) 
           .attr(
             'transform',
             `translate(0, 0) scale(1)`
