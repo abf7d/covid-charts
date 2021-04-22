@@ -22,6 +22,7 @@ export class DashboardComponent implements OnInit {
     start: new FormControl(),
     end: new FormControl(),
   });
+  private selectedNode: any;
 
   constructor(private http: HttpClient) {}
 
@@ -47,7 +48,7 @@ export class DashboardComponent implements OnInit {
     return value;
   }
   selected: any;
-  createChart(countries, svg) {
+  createChart(countries: any[], svg) {
     const width = 1000;
     const height = 700;
     svg.select('*').remove();
@@ -78,6 +79,11 @@ export class DashboardComponent implements OnInit {
     //   world,
     //   (world as any).objects.countries
     // ).features;
+    if (this.selected) {
+      countries.splice(countries.indexOf(this.selected), 1);
+      countries.push(this.selected);
+    }
+    const _this = this;
     svgG
       .selectAll('path')
       .data(countries)
@@ -87,9 +93,14 @@ export class DashboardComponent implements OnInit {
       .attr('class', 'country')
       .on('mousedown', (event, d) => {
         const node = d3.select(event.currentTarget);
+
         if (this.selected === d) {
-          this.selected = null;
-          d.selected = false;
+          // if (this.selectedNode) {
+            // node.attr('transform', `translate(0, 0) scale(1)`);
+            // this.selectedNode = null;
+            // this.selected = null;
+            d.selected = false;
+          // }
 
           // node.attr('transform', `translate(0, 0) scale(1)`);
         } else {
@@ -101,6 +112,7 @@ export class DashboardComponent implements OnInit {
           console.log(d);
           console.log(event);
           console.log(d.properties.name);
+          this.selectedNode = node;
 
           // https://stackoverflow.com/questions/25310390/how-does-path-bounds-work
           // var bounds = path.bounds(d),
@@ -120,7 +132,14 @@ export class DashboardComponent implements OnInit {
       })
       .each(function (d) {
         const node = d3.select(this);
+        var t = d3.transition().duration(400).ease(d3.easeLinear);
         if (d.selected) {
+          
+          // .ease(d3.easeLinear);
+
+          // d3.selectAll(".apple").transition(t)
+          //     .style("fill", "red");
+
           var bounds = path.bounds(d),
             dx = bounds[1][0] - bounds[0][0],
             dy = bounds[1][1] - bounds[0][1],
@@ -129,10 +148,33 @@ export class DashboardComponent implements OnInit {
             scale = 0.9 / Math.max(dx / width, dy / height),
             translate = [width / 2 - scale * x, height / 2 - scale * y];
 
-          node.attr(
+          node
+            .transition(t)
+            .attr(
+              'transform',
+              `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
+            );
+        } else if (_this.selected == d) {
+
+          var bounds = path.bounds(d),
+          dx = bounds[1][0] - bounds[0][0],
+          dy = bounds[1][1] - bounds[0][1],
+          x = (bounds[0][0] + bounds[1][0]) / 2,
+          y = (bounds[0][1] + bounds[1][1]) / 2,
+          scale = 0.9 / Math.max(dx / width, dy / height),
+          translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+          node
+          .attr(
             'transform',
             `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
+          )
+          .transition(t)
+          .attr(
+            'transform',
+            `translate(0, 0) scale(1)`
           );
+          _this.selected = null;
         }
       });
 
