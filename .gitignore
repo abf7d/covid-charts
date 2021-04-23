@@ -44,3 +44,4 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+/projects/covid-app/src/assets/data/nytimes-us-counties.csv
