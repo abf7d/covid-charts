@@ -10,6 +10,7 @@ import * as d3 from 'd3';
 import * as topojson from 'topojson';
 import { FormGroup, FormControl } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
+import { forkJoin } from 'rxjs';
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -27,18 +28,20 @@ export class DashboardComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    this.http
-      .get(
-        '../../../assets/data/countries.json' /*https://gist.githubusercontent.com/GordyD/49654901b07cb764c34f/raw/27eff6687f677c984a11f25977adaa4b9332a2a9/countries-and-states.json'*/ /*('https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-50m.json'*/
-      )
-      .subscribe((world) => {
-        const countries = topojson.feature(
-          world,
-          (world as any).objects.countries
-        ).features;
-        let svg = d3.select(this.chart.nativeElement).append('svg');
-        this.createChart(countries, svg);
-      });
+    // this.http
+    //   .get(
+    //     '../../../assets/data/countries.json' /*https://gist.githubusercontent.com/GordyD/49654901b07cb764c34f/raw/27eff6687f677c984a11f25977adaa4b9332a2a9/countries-and-states.json'*/ /*('https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-50m.json'*/
+    //   )
+    //   .subscribe((world) => {
+    //     const countries = topojson.feature(
+    //       world,
+    //       (world as any).objects.countries
+    //     ).features;
+    //     let svg = d3.select(this.chart.nativeElement).append('svg');
+    //     this.createChart(countries, svg);
+
+    //   });
+    this.runStateBubble();
   }
 
   formatLabel(value: number) {
@@ -96,10 +99,10 @@ export class DashboardComponent implements OnInit {
 
         if (this.selected === d) {
           // if (this.selectedNode) {
-            // node.attr('transform', `translate(0, 0) scale(1)`);
-            // this.selectedNode = null;
-            // this.selected = null;
-            d.selected = false;
+          // node.attr('transform', `translate(0, 0) scale(1)`);
+          // this.selectedNode = null;
+          // this.selected = null;
+          d.selected = false;
           // }
 
           // node.attr('transform', `translate(0, 0) scale(1)`);
@@ -134,7 +137,6 @@ export class DashboardComponent implements OnInit {
         const node = d3.select(this);
         var t = d3.transition().duration(100).ease(d3.easeLinear);
         if (d.selected) {
-          
           // .ease(d3.easeLinear);
 
           // d3.selectAll(".apple").transition(t)
@@ -150,32 +152,28 @@ export class DashboardComponent implements OnInit {
 
           node
             .transition(t)
-            .delay(700) 
+            .delay(700)
             .attr(
               'transform',
               `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
             );
         } else if (_this.selected == d) {
-
           var bounds = path.bounds(d),
-          dx = bounds[1][0] - bounds[0][0],
-          dy = bounds[1][1] - bounds[0][1],
-          x = (bounds[0][0] + bounds[1][0]) / 2,
-          y = (bounds[0][1] + bounds[1][1]) / 2,
-          scale = 0.9 / Math.max(dx / width, dy / height),
-          translate = [width / 2 - scale * x, height / 2 - scale * y];
+            dx = bounds[1][0] - bounds[0][0],
+            dy = bounds[1][1] - bounds[0][1],
+            x = (bounds[0][0] + bounds[1][0]) / 2,
+            y = (bounds[0][1] + bounds[1][1]) / 2,
+            scale = 0.9 / Math.max(dx / width, dy / height),
+            translate = [width / 2 - scale * x, height / 2 - scale * y];
 
           node
-          .attr(
-            'transform',
-            `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
-          )
-          .transition(t)
-          .delay(700) 
-          .attr(
-            'transform',
-            `translate(0, 0) scale(1)`
-          );
+            .attr(
+              'transform',
+              `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
+            )
+            .transition(t)
+            .delay(700)
+            .attr('transform', `translate(0, 0) scale(1)`);
           _this.selected = null;
         }
       });
@@ -250,6 +248,86 @@ export class DashboardComponent implements OnInit {
         canada.classed('hidden', false);
       }
     }*/
+  }
+
+  toMagnitude(n) {
+    var order = Math.floor(Math.log(n) / Math.LN10 + 0.000000001);
+    return Math.pow(10, order);
+  }
+
+  getLocation(d, countyMap, stateMap) {
+    let location = countyMap.get(d.fips);
+    if (!location && d.county === "New York City")
+      location = countyMap.get("36061");
+    if (!location) location = stateMap.get(d.state);
+    if (!location) console.warn("No location found for: " + JSON.stringify(d));
+    return location;
+  }
+
+  runStateBubble() {
+    // const state = this.http.get('../../../assets/data/observable-countyMap.json');
+    // const county = this.http.get('../../assets/data/observable-stateMap.json')
+    const usFile = this.http.get('../../assets/data/observable-us.json');
+    // const covid = this.http.get(
+    //   '../../assets/data/observable-counties-by-date.json'
+    // );
+    const rawDataFile = this.http.get(
+      '../../assets/data/observable-rawData.json'
+    );
+    
+
+    forkJoin([usFile, rawDataFile]).subscribe(([us, rawData]) => {
+      const countyMap = new Map(
+        topojson
+          .feature(us, (us as any).objects.counties)
+          .features.map((d) => [d.id, d])
+      );
+      const stateMap = new Map(
+        topojson
+          .feature(us, (us as any).objects.states)
+          .features.map((d) => [d.properties.name, d])
+      );
+      this.renderStateBubble(countyMap, stateMap, rawData);
+    });
+  }
+
+  renderStateBubble(countyMap, stateMap, rawData) {
+    const startDate = '2020-03-01';
+    const excludeTerritories = new Set([
+      'Guam',
+      'Puerto Rico',
+      'Virgin Islands',
+    ]);
+    // console.log(stateMap);
+    /*data = d3
+      .nest()
+      .key(d => d.date)
+      .entries(rawData.filter(d => !excludeTerritories.has(d.state)))
+      .map(d => d.values)
+      .filter(d => d[0].date >= startDate)*/
+
+    const data = d3.group(
+      rawData.filter(
+        (d) => !excludeTerritories.has(d.state)
+      ),
+        (d) => d.date
+    );
+    console.log(data);
+    // const x = new Map(Object.entries(data));
+    for (let k of data.keys()) {
+      if ((k  < startDate))
+        data.delete(k);
+    }
+    console.log(data);
+    
+    console.log('test', data[0]);
+
+    const dates = Array.from(data.keys()).map(d => new Date(`${d}T20:00Z`))
+    // stateMap = new Map(
+    //   topojson
+    //     .feature(us, us.objects.states)
+    //     .features.map(d => [d.properties.name, d])
+    // )
   }
 
   // TODO: Data location: https://ourworldindata.org/coronavirus-source-data
