@@ -375,6 +375,15 @@ __proto__: Object*/
     .attr("d", path);
 
 
+    const counties = topojson.mesh(us, us.objects.counties, (a, b) => a !== b);
+    svgG
+    .append("path")
+    .datum(topojson.mesh(us, us.objects.counties, (a, b) => a !== b))
+    .attr("fill", "none")
+    .attr("stroke", "#999")
+    .attr("stroke-width", 0.5)
+    .attr("stroke-linejoin", "round")
+    .attr("d", path);
 
 // bubbles first
 
