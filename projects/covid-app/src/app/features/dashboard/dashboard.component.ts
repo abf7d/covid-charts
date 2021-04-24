@@ -28,20 +28,23 @@ export class DashboardComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    // this.http
-    //   .get(
-    //     '../../../assets/data/countries.json' /*https://gist.githubusercontent.com/GordyD/49654901b07cb764c34f/raw/27eff6687f677c984a11f25977adaa4b9332a2a9/countries-and-states.json'*/ /*('https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-50m.json'*/
-    //   )
-    //   .subscribe((world) => {
-    //     const countries = topojson.feature(
-    //       world,
-    //       (world as any).objects.countries
-    //     ).features;
-    //     let svg = d3.select(this.chart.nativeElement).append('svg');
-    //     this.createChart(countries, svg);
+    let svg = d3.select(this.chart.nativeElement).append('svg');
 
-    //   });
-    this.runStateBubble();
+    this.http
+      .get(
+        '../../../assets/data/countries.json' /*https://gist.githubusercontent.com/GordyD/49654901b07cb764c34f/raw/27eff6687f677c984a11f25977adaa4b9332a2a9/countries-and-states.json'*/ /*('https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-50m.json'*/
+      )
+      .subscribe((world) => {
+        const countries = topojson.feature(
+          world,
+          (world as any).objects.countries
+        ).features;
+        //  let svg = d3.select(this.chart.nativeElement).append('svg');
+        //  this.createChart(countries, svg);
+
+      });
+
+    this.runStateBubble(svg);
   }
 
   formatLabel(value: number) {
@@ -86,13 +89,22 @@ export class DashboardComponent implements OnInit {
       countries.splice(countries.indexOf(this.selected), 1);
       countries.push(this.selected);
     }
+    /*
+    geometry: {type: "Polygon", coordinates: Array(1)}
+id: "AFG"
+properties: {name: "Afghanistan"}
+type: "Feature"
+__proto__: Object*/
     const _this = this;
     svgG
       .selectAll('path')
       .data(countries)
       .enter()
       .append('path')
-      .attr('d', path)
+      .attr('d', d =>
+      {
+        path(d);
+      })
       .attr('class', 'country')
       .on('mousedown', (event, d) => {
         const node = d3.select(event.currentTarget);
@@ -257,26 +269,27 @@ export class DashboardComponent implements OnInit {
 
   getLocation(d, countyMap, stateMap) {
     let location = countyMap.get(d.fips);
-    if (!location && d.county === "New York City")
-      location = countyMap.get("36061");
+    if (!location && d.county === 'New York City')
+      location = countyMap.get('36061');
     if (!location) location = stateMap.get(d.state);
-    if (!location) console.warn("No location found for: " + JSON.stringify(d));
+    if (!location) console.warn('No location found for: ' + JSON.stringify(d));
     return location;
   }
 
-  runStateBubble() {
+  runStateBubble(svg) {
     // const state = this.http.get('../../../assets/data/observable-countyMap.json');
     // const county = this.http.get('../../assets/data/observable-stateMap.json')
     const usFile = this.http.get('../../assets/data/observable-us.json');
+    const placesFile = this.http.get('../../assets/data/observable-places.json')
     // const covid = this.http.get(
     //   '../../assets/data/observable-counties-by-date.json'
     // );
     const rawDataFile = this.http.get(
       '../../assets/data/observable-rawData.json'
     );
-    
 
-    forkJoin([usFile, rawDataFile]).subscribe(([us, rawData]) => {
+    forkJoin([usFile, rawDataFile, placesFile]).subscribe(([us, rawData, places]) => {
+      
       const countyMap = new Map(
         topojson
           .feature(us, (us as any).objects.counties)
@@ -287,47 +300,154 @@ export class DashboardComponent implements OnInit {
           .feature(us, (us as any).objects.states)
           .features.map((d) => [d.properties.name, d])
       );
-      this.renderStateBubble(countyMap, stateMap, rawData);
+      this.renderStateBubble(svg, countyMap, stateMap, rawData, us, places);
     });
   }
 
-  renderStateBubble(countyMap, stateMap, rawData) {
+  mapProjection(coords) {
+    const proj = d3.geoAlbersUsa().scale(1300);
+    const [x, y] = proj(coords);
+    return [x + 6, y + 54];
+  }
+  renderStateBubble(svg, countyMap, stateMap, rawData, us, places) {
+    const width = 1000;
+    const height = 700;
+    svg.select('*').remove();
+    let svgG = svg.attr('width', width).attr('height', height).append('g');
+
+    /*var projection = d3
+      .geoMercator()
+      .translate([width / 2, height / 1.4]) // translate to center of screen. You might have to fiddle with this
+      .scale([150]);*/
+
+      const proj = d3.geoAlbersUsa().scale(1300);
+      const albersProjection  = (coords) => {
+        const [x, y] = proj(coords);
+        return [x + 6, y + 54];
+      };
+
+    var path = d3.geoPath(); //.projection(projection);
+
     const startDate = '2020-03-01';
     const excludeTerritories = new Set([
       'Guam',
       'Puerto Rico',
       'Virgin Islands',
     ]);
-    // console.log(stateMap);
-    /*data = d3
-      .nest()
-      .key(d => d.date)
-      .entries(rawData.filter(d => !excludeTerritories.has(d.state)))
-      .map(d => d.values)
-      .filter(d => d[0].date >= startDate)*/
 
     const data = d3.group(
-      rawData.filter(
-        (d) => !excludeTerritories.has(d.state)
-      ),
-        (d) => d.date
+      rawData.filter((d) => !excludeTerritories.has(d.state)),
+      (d) => d.date
     );
-    console.log(data);
-    // const x = new Map(Object.entries(data));
     for (let k of data.keys()) {
-      if ((k  < startDate))
-        data.delete(k);
+      if (k < startDate) data.delete(k);
     }
     console.log(data);
-    
+
     console.log('test', data[0]);
 
-    const dates = Array.from(data.keys()).map(d => new Date(`${d}T20:00Z`))
-    // stateMap = new Map(
-    //   topojson
-    //     .feature(us, us.objects.states)
-    //     .features.map(d => [d.properties.name, d])
-    // )
+    const dates = Array.from(data.keys()).map((d) => new Date(`${d}T20:00Z`));
+
+    svgG
+    .append("path")
+    .datum(topojson.feature(us, us.objects.nation)) //
+    .attr("fill", "#f4f4f4")
+    .attr("stroke", "#999")
+    .attr("stroke-width", 1)
+    .attr("stroke-linejoin", "round")
+    .attr("d", d => {
+      return path(d)
+    });
+
+    // topojson.feature(
+      //       world,
+      //       (world as any).objects.countries
+      //     ).features;
+
+
+  svgG
+    .append("path")
+    .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
+    .attr("fill", "none")
+    .attr("stroke", "#999")
+    .attr("stroke-width", 0.5)
+    .attr("stroke-linejoin", "round")
+    .attr("d", path);
+
+
+
+// bubbles first
+
+svgG
+.selectAll("place")
+.data(places)
+.enter()
+.append("circle")
+.attr("class", "place")
+.attr("r", 2.5)
+.attr("transform", function(d) {
+  return "translate(" + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ")";
+});
+
+svgG
+.selectAll(".place-label")
+.data(places)
+.enter()
+.append("text")
+.attr("class", "place-label")
+.attr("transform", function(d) {
+  return "translate(" + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ")";
+})
+.attr("dy", ".35em")
+.text(function(d) {
+  return d.NAME;
+})
+.attr("x", 6)
+.style("text-anchor", "start");
+    /*
+    const bubble = svgG
+    .selectAll(".bubble")
+    .data(
+      data[data.length - 1].sort((a, b) => +b.cases - +a.cases),
+      d => d.fips || d.county
+    )
+    .enter()
+    .append("circle")
+    .attr("transform", d => "translate(" + path.centroid(getLocation(d)) + ")")
+    .attr("class", "bubble")
+    .attr("fill-opacity", 0.5)
+    .attr("fill", d => colorScale(0))
+    .attr("r", d => radius(0));
+
+  bubble.append("title");
+
+  svgG
+    .selectAll("place")
+    .data(places)
+    .enter()
+    .append("circle")
+    .attr("class", "place")
+    .attr("r", 2.5)
+    .attr("transform", function(d) {
+      return "translate(" + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ")";
+    });
+
+    svgG
+    .selectAll(".place-label")
+    .data(places)
+    .enter()
+    .append("text")
+    .attr("class", "place-label")
+    .attr("transform", function(d) {
+      return "translate(" + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ")";
+    })
+    .attr("dy", ".35em")
+    .text(function(d) {
+      return d.NAME;
+    })
+    .attr("x", 6)
+    .style("text-anchor", "start");
+*/
   }
 
   // TODO: Data location: https://ourworldindata.org/coronavirus-source-data
