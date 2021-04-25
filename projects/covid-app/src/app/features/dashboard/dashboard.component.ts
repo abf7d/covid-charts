@@ -24,11 +24,21 @@ export class DashboardComponent implements OnInit {
     end: new FormControl(),
   });
   private selectedNode: any;
-
+  public days: number;
+  public maxDays: number;
+  public dayInterval: number;
+  public currentDay: number;
+  public durationMs: number;
   constructor(private http: HttpClient) {}
+
+  //TODO: Heatmap 2 color ranges
 
   ngOnInit(): void {
     let svg = d3.select(this.chart.nativeElement).append('svg');
+    this.maxDays = 400;
+    this.dayInterval = 10;
+    this.currentDay = 0;
+    this.durationMs = 6000;
 
     this.http
       .get(
@@ -343,6 +353,7 @@ __proto__: Object*/
       (d) => d.date
     );
     this.data = data;
+    this.maxDays = data.size;
 
     for (let k of data.keys()) {
       if (k < startDate) data.delete(k);
@@ -618,18 +629,33 @@ __proto__: Object*/
       .attr('x', 6)
       .style('text-anchor', 'start');
   }
+
+  mousedownDay(){
+    clearInterval(this.interval);
+  }
+  changeDay() {
+    clearInterval(this.interval);
+    this.drawHeatmap(this.currentDay);
+  }
+  resetTimer() {
+    clearInterval(this.interval);
+    this.loop();
+  }
+  interval;
   loop() {
     const frames = Array.from(this.data.values()).length;
-    const totalMs = 11080;
-    const step = 10;
+    const totalMs = this.durationMs;
+    const step = this.dayInterval;
     const secPerFrame = totalMs / frames * step;
-
-    let index = 1;
+    clearInterval(this.interval);
+    let index = this.currentDay;
     setTimeout(() => {
-    const interval = setInterval(() => {
+    this.interval = setInterval(() => {
       if (index > frames) {
-        clearInterval(interval);
+        clearInterval(this.interval);
       } else {
+        this.currentDay = index;
+
         this.drawHeatmap(index);
         index = index + step;
       }

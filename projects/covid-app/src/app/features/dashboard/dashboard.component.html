@@ -36,11 +36,43 @@
 </mat-form-field>
 
 <p>Selected range: {{ range.value | json }}</p>
-
+Current Day
 <mat-slider
+(change)="changeDay()"
+(mousedown)="mousedownDay()"
   thumbLabel
   [displayWith]="formatLabel"
-  tickInterval="1000"
+  [tickInterval]="dayInterval"
   min="1"
-  max="100000"
+  [max]="maxDays"
+  [(ngModel)]="currentDay"
+  
 ></mat-slider>
+<button (click)="mousedownDay()">Stop Timer</button>
+<button (click)="resetTimer()">Start Auto timer</button>
+Display Every x Frames
+<mat-slider
+(mousedown)="mousedownDay()"
+  thumbLabel
+  [displayWith]="formatLabel"
+  [tickInterval]="5"
+  min="1"
+  [max]="50"
+  [(ngModel)]="dayInterval"
+  
+></mat-slider>
+
+Duration
+(ms)
+<mat-slider
+(mousedown)="mousedownDay()"
+  thumbLabel
+  [displayWith]="formatLabel"
+  [tickInterval]="250"
+  min="500"
+  [max]="10000"
+  [(ngModel)]="durationMs"
+  
+></mat-slider>
+
+
