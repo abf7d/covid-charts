@@ -8,13 +8,26 @@
     tabs with those country selections colored, allow different time frames Have
     a polygon button and a pointer button to toggle between selecting countries
     by click or by boundary
-    
   </p>
-  <p> (Look ate vaccination data) Work with vaccine data, drop down to select or different channels for vaccine and covid cases which are transparent and you can toggle them on or off
-      show % reduction / increase per vaccine in a channel, or and see<a href="https://data.cdc.gov/browse">https://data.cdc.gov/browse</a></p>
+  <p>
+    (Look ate vaccination data) Work with vaccine data, drop down to select or
+    different channels for vaccine and covid cases which are transparent and you
+    can toggle them on or off show % reduction / increase per vaccine in a
+    channel, or and see<a href="https://data.cdc.gov/browse"
+      >https://data.cdc.gov/browse</a
+    >
+  </p>
 
-      NYTimes by county <a href="https://github.com/nytimes/covid-19-data/blob/master/live/us-counties.csv">https://github.com/nytimes/covid-19-data/blob/master/live/us-counties.csv</a>
-      Observable with covid animation bubbles <a href="https://observablehq.com/@jashkenas/united-states-coronavirus-daily-cases-map-covid-19">https://observablehq.com/@jashkenas/united-states-coronavirus-daily-cases-map-covid-19</a>
+  NYTimes by county
+  <a
+    href="https://github.com/nytimes/covid-19-data/blob/master/live/us-counties.csv"
+    >https://github.com/nytimes/covid-19-data/blob/master/live/us-counties.csv</a
+  >
+  Observable with covid animation bubbles
+  <a
+    href="https://observablehq.com/@jashkenas/united-states-coronavirus-daily-cases-map-covid-19"
+    >https://observablehq.com/@jashkenas/united-states-coronavirus-daily-cases-map-covid-19</a
+  >
 </div>
 <div #chart></div>
 
@@ -34,45 +47,60 @@
     >Invalid end date</mat-error
   >
 </mat-form-field>
-
+{{currentDate | date: 'M/d/yyyy'}}
 <p>Selected range: {{ range.value | json }}</p>
 Current Day
 <mat-slider
-(change)="changeDay()"
-(mousedown)="mousedownDay()"
+  (change)="changeDay()"
+  (mousedown)="mousedownDay()"
   thumbLabel
   [displayWith]="formatLabel"
   [tickInterval]="dayInterval"
   min="1"
   [max]="maxDays"
   [(ngModel)]="currentDay"
-  
 ></mat-slider>
 <button (click)="mousedownDay()">Stop Timer</button>
 <button (click)="resetTimer()">Start Auto timer</button>
 Display Every x Frames
 <mat-slider
-(mousedown)="mousedownDay()"
+  (mousedown)="mousedownDay()"
   thumbLabel
   [displayWith]="formatLabel"
   [tickInterval]="5"
   min="1"
   [max]="50"
   [(ngModel)]="dayInterval"
-  
 ></mat-slider>
 
-Duration
-(ms)
+Duration (ms)
 <mat-slider
-(mousedown)="mousedownDay()"
+  (mousedown)="mousedownDay()"
   thumbLabel
   [displayWith]="formatLabel"
   [tickInterval]="250"
   min="500"
   [max]="10000"
   [(ngModel)]="durationMs"
-  
 ></mat-slider>
 
+<input
+(cpToggleChange)="changeColor($event)"
+  [value]="minColor"
+  [style.background]="minColor"
+  [(colorPicker)]="minColor"
+/>
 
+<input
+(cpToggleChange)="changeColor($event)"
+  [value]="midColor"
+  [style.background]="midColor"
+  [(colorPicker)]="midColor"
+/>
+
+<input
+(cpToggleChange)="changeColor($event)"
+  [value]="maxColor"
+  [style.background]="maxColor"
+  [(colorPicker)]="maxColor"
+/>

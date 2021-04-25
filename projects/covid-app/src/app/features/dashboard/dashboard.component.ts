@@ -30,6 +30,10 @@ export class DashboardComponent implements OnInit {
   public dayInterval: number;
   public currentDay: number;
   public durationMs: number;
+  public midColor: string;
+  public minColor: string;
+  public maxColor: string;
+  public currentDate: Date;
   constructor(private http: HttpClient) {}
 
   //TODO: Heatmap 2 color ranges
@@ -40,6 +44,10 @@ export class DashboardComponent implements OnInit {
     this.dayInterval = 10;
     this.currentDay = 0;
     this.durationMs = 6000;
+
+    this.minColor = 'yellow';
+    this.midColor = 'purple';
+    this.maxColor = 'green';
 
     this.http
       .get(
@@ -364,7 +372,8 @@ __proto__: Object*/
     console.log('test', data[0]);
 
     const dates = Array.from(data.keys()).map((d) => new Date(`${d}T20:00Z`));
-
+   // const sorted = dates.sort((a: any, b: any) => a-b);
+    
     svgG
       .append('path')
       .datum(topojson.feature(us, us.objects.nation)) //
@@ -532,8 +541,9 @@ __proto__: Object*/
   places: any;
   drawHeatmap(i: number) {
     const testDataPoint = Array.from(this.data.values())[i];
-
-    if(!i) {
+    const date = Array.from(this.data.keys())[i];
+    this.currentDate = new Date(`${date}T20:00Z`);
+    if (!i) {
       return;
     }
     const maxCases = Math.max(...(testDataPoint as any).map((a) => a.cases));
@@ -552,17 +562,15 @@ __proto__: Object*/
     var colorScale = d3
       .scaleLog() //(d3.interpolateInferno)
       .domain([1, mid]) // maxCases]) //5000])
-      .range(['yellow', 'purple']);
+      .range([this.minColor, this.midColor]);
 
-    var upperColorScale =  d3
-    .scaleLog() //(d3.interpolateInferno)
-    .domain([mid, maxCases]) // maxCases]) //5000])
-    .range(['purple', 'green']);
+    var upperColorScale = d3
+      .scaleLog() //(d3.interpolateInferno)
+      .domain([mid, maxCases]) // maxCases]) //5000])
+      .range([this.midColor, this.maxColor]);
 
     const unknownCounty = [];
-    const nodes = this.svgG
-    .selectAll('.bubble')
-    .data(
+    const nodes = this.svgG.selectAll('.bubble').data(
       /*data[data.length - 1]*/ (testDataPoint as any)
         // .slice(0, 10)
         .sort((a, b) => +b.cases - +a.cases),
@@ -598,21 +606,21 @@ __proto__: Object*/
         return p;
       });
 
-      nodes.attr('fill', (d) => {
-        if (+d.cases > mid) {
-          return upperColorScale(+d.cases);
-        }
-        const color = colorScale(+d.cases);
-        return color;
-      });
+    nodes.attr('fill', (d) => {
+      if (+d.cases > mid) {
+        return upperColorScale(+d.cases);
+      }
+      const color = colorScale(+d.cases);
+      return color;
+    });
 
-      nodes.exit().remove();
-      const proj = d3.geoAlbersUsa().scale(1300);
-      const albersProjection = (coords) => {
-        const [x, y] = proj(coords);
-        return [x + 6, y + 54];
-      };
-      this.svgG
+    nodes.exit().remove();
+    const proj = d3.geoAlbersUsa().scale(1300);
+    const albersProjection = (coords) => {
+      const [x, y] = proj(coords);
+      return [x + 6, y + 54];
+    };
+    this.svgG
       .selectAll('place')
       .data(this.places)
       .enter()
@@ -644,12 +652,18 @@ __proto__: Object*/
       .style('text-anchor', 'start');
   }
 
-  mousedownDay(){
+  mousedownDay() {
     clearInterval(this.interval);
   }
   changeDay() {
     clearInterval(this.interval);
     this.drawHeatmap(this.currentDay);
+  }
+  changeColor(open) {
+    if (!open) {
+      clearInterval(this.interval);
+      this.drawHeatmap(this.currentDay);
+    }
   }
   resetTimer() {
     clearInterval(this.interval);
@@ -660,22 +674,21 @@ __proto__: Object*/
     const frames = Array.from(this.data.values()).length;
     const totalMs = this.durationMs;
     const step = this.dayInterval;
-    const secPerFrame = totalMs / frames * step;
+    const secPerFrame = (totalMs / frames) * step;
     clearInterval(this.interval);
     let index = this.currentDay;
     setTimeout(() => {
-    this.interval = setInterval(() => {
-      if (index > frames) {
-        clearInterval(this.interval);
-      } else {
-        this.currentDay = index;
+      this.interval = setInterval(() => {
+        if (index > frames) {
+          clearInterval(this.interval);
+        } else {
+          this.currentDay = index;
 
-        this.drawHeatmap(index);
-        index = index + step;
-      }
-    }, secPerFrame)
-  },
-    10);
+          this.drawHeatmap(index);
+          index = index + step;
+        }
+      }, secPerFrame);
+    }, 10);
     /* update(i) {
       const t = svg
         .transition()
