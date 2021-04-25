@@ -294,8 +294,7 @@ __proto__: Object*/
   }
 
   runStateBubble(svg) {
-    // const state = this.http.get('../../../assets/data/observable-countyMap.json');
-    // const county = this.http.get('../../assets/data/observable-stateMap.json')
+    // d3.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
     const usFile = this.http.get('../../assets/data/observable-us.json');
     const placesFile = this.http.get(
       '../../assets/data/observable-places.json'
@@ -304,11 +303,15 @@ __proto__: Object*/
     //   '../../assets/data/observable-counties-by-date.json'
     // );
     const rawDataFile = this.http.get(
-      '../../assets/data/observable-rawData.json'
+      'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv', { responseType: 'text' } //../../assets/data/observable-rawData.json'
     );
 
+    
     forkJoin([usFile, rawDataFile, placesFile]).subscribe(
-      ([us, rawData, places]) => {
+      ([us, rawDataCsv, places]) => {
+        // d3.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
+        var rawDataJson = d3.csvParse(rawDataCsv);
+   
         const countyMap = new Map(
           topojson
             .feature(us, (us as any).objects.counties)
@@ -319,8 +322,8 @@ __proto__: Object*/
             .feature(us, (us as any).objects.states)
             .features.map((d) => [d.properties.name, d])
         );
-        this.renderStateBubble(svg, countyMap, stateMap, rawData, us, places);
-        this.loop();
+        this.renderStateBubble(svg, countyMap, stateMap, rawDataJson, us, places);
+        //this.loop();
       }
     );
   }
