@@ -11,6 +11,7 @@ import * as topojson from 'topojson';
 import { FormGroup, FormControl } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
 import { forkJoin } from 'rxjs';
+import { isLoweredSymbol } from '@angular/compiler';
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -545,11 +546,18 @@ __proto__: Object*/
     // .linear()
     // .domain([maxCases / 2, 0])
     // .range([`#FF0`, `#F00`]);
+    const logMax = Math.log10(maxCases);
+    const mid = Math.pow(10, logMax / 2);
 
     var colorScale = d3
       .scaleLog() //(d3.interpolateInferno)
-      .domain([1, maxCases]) // maxCases]) //5000])
+      .domain([1, mid]) // maxCases]) //5000])
       .range(['yellow', 'purple']);
+
+    var upperColorScale =  d3
+    .scaleLog() //(d3.interpolateInferno)
+    .domain([mid, maxCases]) // maxCases]) //5000])
+    .range(['purple', 'green']);
 
     const unknownCounty = [];
     const nodes = this.svgG
@@ -565,6 +573,9 @@ __proto__: Object*/
       .append('path')
       .attr('class', 'bubble')
       .attr('fill', (d) => {
+        if (+d.cases > mid) {
+          return upperColorScale(+d.cases);
+        }
         const color = colorScale(+d.cases);
         return color;
       })
@@ -588,6 +599,9 @@ __proto__: Object*/
       });
 
       nodes.attr('fill', (d) => {
+        if (+d.cases > mid) {
+          return upperColorScale(+d.cases);
+        }
         const color = colorScale(+d.cases);
         return color;
       });
