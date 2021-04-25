@@ -375,15 +375,55 @@ __proto__: Object*/
     .attr("d", path);
 
 
-    const counties = topojson.mesh(us, us.objects.counties, (a, b) => a !== b);
-    svgG
-    .append("path")
-    .datum(topojson.mesh(us, us.objects.counties, (a, b) => a !== b))
-    .attr("fill", "none")
-    .attr("stroke", "#999")
-    .attr("stroke-width", 0.5)
-    .attr("stroke-linejoin", "round")
-    .attr("d", path);
+    // const counties = topojson.mesh(us, us.objects.counties, (a, b) => a !== b);
+    // svgG
+    // .append("path")
+    // .datum(topojson.mesh(us, us.objects.counties, (a, b) => a !== b))
+    // .attr("fill", "none")
+    // .attr("stroke", "#999")
+    // .attr("stroke-width", 0.5)
+    // .attr("stroke-linejoin", "round")
+    // .attr("d", path);
+
+
+const testDataPoint = Array.from(data.values())[40];
+const unknownCounty = [];
+const bubble = svgG
+.selectAll(".bubble")
+.data(
+  /*data[data.length - 1]*/ (testDataPoint as any).sort((a, b) => +b.cases - +a.cases),
+  d => d.fips || d.county
+)
+.enter()
+.append("path")
+// .attr("transform", d => "translate(" + path.centroid(getLocation(d)) + ")")
+.attr("class", "bubble")
+.attr("fill-opacity", 0.5)
+.attr('fill','red')
+.attr('d', d => {
+  let county = countyMap.get( d.fips || d.county);
+  if (d.county === "New York City") {
+  county = countyMap.get("36061");
+  console.log(`county new york city`, county)
+}
+if(d.county === 'Kansas City') {
+  county = countyMap.get("64105"); // 64155 mptworking
+  console.log(`county kansas city`, county)
+}
+  if(!county) {
+    unknownCounty.push(d);
+    console.log(`fips: ${d.fips}, county: ${d.county}`, d)
+  }
+
+ 
+
+
+  const p = path(county);
+  return p;
+})
+// .attr("fill", d => colorScale(0))
+// .attr("r", d => radius(0));
+
 
 // bubbles first
 
