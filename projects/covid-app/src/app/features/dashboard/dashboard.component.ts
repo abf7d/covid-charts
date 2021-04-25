@@ -436,36 +436,37 @@ __proto__: Object*/
     // .attr("r", d => radius(0));
 
     // bubbles first
-    svgG
-      .selectAll('place')
-      .data(places)
-      .enter()
-      .append('circle')
-      .attr('class', 'place')
-      .attr('r', 2.5)
-      .attr('transform', function (d) {
-        return (
-          'translate(' + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ')'
-        );
-      });
+    this.places = places;
+    // svgG
+    //   .selectAll('place')
+    //   .data(places)
+    //   .enter()
+    //   .append('circle')
+    //   .attr('class', 'place')
+    //   .attr('r', 2.5)
+    //   .attr('transform', function (d) {
+    //     return (
+    //       'translate(' + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ')'
+    //     );
+    //   });
 
-    svgG
-      .selectAll('.place-label')
-      .data(places)
-      .enter()
-      .append('text')
-      .attr('class', 'place-label')
-      .attr('transform', function (d) {
-        return (
-          'translate(' + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ')'
-        );
-      })
-      .attr('dy', '.35em')
-      .text(function (d) {
-        return d.NAME;
-      })
-      .attr('x', 6)
-      .style('text-anchor', 'start');
+    // svgG
+    //   .selectAll('.place-label')
+    //   .data(places)
+    //   .enter()
+    //   .append('text')
+    //   .attr('class', 'place-label')
+    //   .attr('transform', function (d) {
+    //     return (
+    //       'translate(' + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ')'
+    //     );
+    //   })
+    //   .attr('dy', '.35em')
+    //   .text(function (d) {
+    //     return d.NAME;
+    //   })
+    //   .attr('x', 6)
+    //   .style('text-anchor', 'start');
     /*
     const bubble = svgG
     .selectAll(".bubble")
@@ -516,6 +517,7 @@ __proto__: Object*/
   path: any;
   svgG: any;
   data: any;
+  places: any;
   drawHeatmap(i: number) {
     const testDataPoint = Array.from(this.data.values())[i];
 
@@ -580,11 +582,47 @@ __proto__: Object*/
       });
 
       nodes.exit().remove();
+      const proj = d3.geoAlbersUsa().scale(1300);
+      const albersProjection = (coords) => {
+        const [x, y] = proj(coords);
+        return [x + 6, y + 54];
+      };
+      this.svgG
+      .selectAll('place')
+      .data(this.places)
+      .enter()
+      .append('circle')
+      .attr('class', 'place')
+      .attr('r', 2.5)
+      .attr('transform', function (d) {
+        return (
+          'translate(' + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ')'
+        );
+      });
+
+    this.svgG
+      .selectAll('.place-label')
+      .data(this.places)
+      .enter()
+      .append('text')
+      .attr('class', 'place-label')
+      .attr('transform', function (d) {
+        return (
+          'translate(' + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ')'
+        );
+      })
+      .attr('dy', '.35em')
+      .text(function (d) {
+        return d.NAME;
+      })
+      .attr('x', 6)
+      .style('text-anchor', 'start');
   }
   loop() {
     const frames = Array.from(this.data.values()).length;
-    const totalSecs = 40;
-    const secPerFrame = totalSecs / frames;
+    const totalMs = 11080;
+    const step = 10;
+    const secPerFrame = totalMs / frames * step;
 
     let index = 1;
     setTimeout(() => {
@@ -593,7 +631,7 @@ __proto__: Object*/
         clearInterval(interval);
       } else {
         this.drawHeatmap(index);
-        index = index + 1;
+        index = index + step;
       }
     }, secPerFrame)
   },
