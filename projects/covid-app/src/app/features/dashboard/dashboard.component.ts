@@ -301,6 +301,7 @@ __proto__: Object*/
             .features.map((d) => [d.properties.name, d])
         );
         this.renderStateBubble(svg, countyMap, stateMap, rawData, us, places);
+        this.loop();
       }
     );
   }
@@ -311,11 +312,12 @@ __proto__: Object*/
     return [x + 6, y + 54];
   }
   renderStateBubble(svg, countyMap, stateMap, rawData, us, places) {
+    this.countyMap = countyMap;
     const width = 1000;
     const height = 700;
     svg.select('*').remove();
     let svgG = svg.attr('width', width).attr('height', height).append('g');
-
+    this.svgG = svgG;
     /*var projection = d3
       .geoMercator()
       .translate([width / 2, height / 1.4]) // translate to center of screen. You might have to fiddle with this
@@ -328,7 +330,7 @@ __proto__: Object*/
     };
 
     var path = d3.geoPath(); //.projection(projection);
-
+    this.path = path;
     const startDate = '2020-03-01';
     const excludeTerritories = new Set([
       'Guam',
@@ -340,6 +342,8 @@ __proto__: Object*/
       rawData.filter((d) => !excludeTerritories.has(d.state)),
       (d) => d.date
     );
+    this.data = data;
+
     for (let k of data.keys()) {
       if (k < startDate) data.delete(k);
     }
@@ -384,74 +388,54 @@ __proto__: Object*/
     // .attr("stroke-linejoin", "round")
     // .attr("d", path);
 
-    const testDataPoint = Array.from(data.values())[40];
+    this.drawHeatmap(0);
+    // const testDataPoint = Array.from(data.values())[40];
 
-    const maxCases = Math.max(...(testDataPoint as any).map((a) => a.cases));
-    // const lowerColor = d3
-    // .linear()
-    // .domain([0, maxCases / 2])
-    // .range([`#0f0`, `#FFFF00`]);
+    // const maxCases = Math.max(...(testDataPoint as any).map((a) => a.cases));
 
-    // const upperColor = d3
-    // .linear()
-    // .domain([maxCases / 2, 0])
-    // .range([`#FF0`, `#F00`]);
+    // var colorScale = d3
+    //   .scaleLog () //(d3.interpolateInferno)
+    //   .domain([1, maxCases]) //5000])
+    //   .range(['yellow', 'purple']);
 
-    var colorScale = d3
-      .scaleLog () //(d3.interpolateInferno)
-      .domain([1, maxCases]) //5000])
-      .range(['yellow', 'purple']);
+    // const unknownCounty = [];
+    // const bubble = svgG
+    //   .selectAll('.bubble')
+    //   .data(
+    //     /*data[data.length - 1]*/ (testDataPoint as any)
+    //       // .slice(0, 10)
+    //       .sort((a, b) => +b.cases - +a.cases),
+    //     (d) => d.fips || d.county
+    //   )
+    //   .enter()
+    //   .append('path')
+    //   .attr('class', 'bubble')
+    //   .attr('fill', (d) => {
+    //       const color = colorScale(+d.cases);
+    //       return color;
+    //   })
+    //   .attr('d', (d) => {
+    //     let county = countyMap.get(d.fips || d.county);
+    //     if (d.county === 'New York City') {
+    //       county = countyMap.get('36061');
+    //       console.log(`county new york city`, county);
+    //     }
+    //     if (d.county === 'Kansas City') {
+    //       county = countyMap.get('64105'); // 64155 mptworking
+    //       console.log(`county kansas city`, county);
+    //     }
+    //     if (!county) {
+    //       unknownCounty.push(d);
+    //       console.log(`fips: ${d.fips}, county: ${d.county}`, d);
+    //     }
 
-    const unknownCounty = [];
-    const bubble = svgG
-      .selectAll('.bubble')
-      .data(
-        /*data[data.length - 1]*/ (testDataPoint as any)
-          // .slice(0, 10)
-          .sort((a, b) => +b.cases - +a.cases),
-        (d) => d.fips || d.county
-      )
-      .enter()
-      .append('path')
-      // .attr("transform", d => "translate(" + path.centroid(getLocation(d)) + ")")
-      .attr('class', 'bubble')
-      // .attr('fill-opacity', 0.5)
-      .attr('fill', (d) => {
-       
-          const color = colorScale(+d.cases);
-          // if(+d.cases > 1000){
-          return color;
-          // }
-          return '#fff';
-        /*if( d.cases < maxCases/2) {
-    return lowerColor(d.cases);
-  } else {
-    return upperColor(d.cases);
-  }*/
-      })
-      .attr('d', (d) => {
-        let county = countyMap.get(d.fips || d.county);
-        if (d.county === 'New York City') {
-          county = countyMap.get('36061');
-          console.log(`county new york city`, county);
-        }
-        if (d.county === 'Kansas City') {
-          county = countyMap.get('64105'); // 64155 mptworking
-          console.log(`county kansas city`, county);
-        }
-        if (!county) {
-          unknownCounty.push(d);
-          console.log(`fips: ${d.fips}, county: ${d.county}`, d);
-        }
-
-        const p = path(county);
-        return p;
-      });
+    //     const p = path(county);
+    //     return p;
+    //   });
     // .attr("fill", d => colorScale(0))
     // .attr("r", d => radius(0));
 
     // bubbles first
-
     svgG
       .selectAll('place')
       .data(places)
@@ -526,6 +510,116 @@ __proto__: Object*/
     .attr("x", 6)
     .style("text-anchor", "start");
 */
+  }
+
+  countyMap: any;
+  path: any;
+  svgG: any;
+  data: any;
+  drawHeatmap(i: number) {
+    const testDataPoint = Array.from(this.data.values())[i];
+
+    if(!i) {
+      return;
+    }
+    const maxCases = Math.max(...(testDataPoint as any).map((a) => a.cases));
+    // const lowerColor = d3
+    // .linear()
+    // .domain([0, maxCases / 2])
+    // .range([`#0f0`, `#FFFF00`]);
+
+    // const upperColor = d3
+    // .linear()
+    // .domain([maxCases / 2, 0])
+    // .range([`#FF0`, `#F00`]);
+
+    var colorScale = d3
+      .scaleLog() //(d3.interpolateInferno)
+      .domain([1, maxCases]) // maxCases]) //5000])
+      .range(['yellow', 'purple']);
+
+    const unknownCounty = [];
+    const nodes = this.svgG
+    .selectAll('.bubble')
+    .data(
+      /*data[data.length - 1]*/ (testDataPoint as any)
+        // .slice(0, 10)
+        .sort((a, b) => +b.cases - +a.cases),
+      (d) => d.fips || d.county
+    );
+    const enterNodes = nodes.enter(); // need to run update instead of enter, its only coloring new counties
+    enterNodes
+      .append('path')
+      .attr('class', 'bubble')
+      .attr('fill', (d) => {
+        const color = colorScale(+d.cases);
+        return color;
+      })
+      .attr('d', (d) => {
+        let county = this.countyMap.get(d.fips || d.county);
+        if (d.county === 'New York City') {
+          county = this.countyMap.get('36061');
+          console.log(`county new york city`, county);
+        }
+        if (d.county === 'Kansas City') {
+          county = this.countyMap.get('64105'); // 64155 mptworking
+          console.log(`county kansas city`, county);
+        }
+        if (!county) {
+          unknownCounty.push(d);
+          console.log(`fips: ${d.fips}, county: ${d.county}`, d);
+        }
+
+        const p = this.path(county);
+        return p;
+      });
+
+      nodes.attr('fill', (d) => {
+        const color = colorScale(+d.cases);
+        return color;
+      });
+
+      nodes.exit().remove();
+  }
+  loop() {
+    const frames = Array.from(this.data.values()).length;
+    const totalSecs = 40;
+    const secPerFrame = totalSecs / frames;
+
+    let index = 1;
+    setTimeout(() => {
+    const interval = setInterval(() => {
+      if (index > frames) {
+        clearInterval(interval);
+      } else {
+        this.drawHeatmap(index);
+        index = index + 1;
+      }
+    }, secPerFrame)
+  },
+    10);
+    /* update(i) {
+      const t = svg
+        .transition()
+        .duration(i === 0 ? 0 : delay)
+        .ease(d3.easeLinear);
+
+      bubble
+        .data(data[i], d => d.fips || d.county)
+        .call(b => {
+          b.transition(t)
+            .attr("fill", d => colorScale(+d.cases))
+            .attr("r", d => radius(+d.cases))
+            .select("title")
+            .text(d => `${placeName(d)}: ${numFormat(+d.cases)} cases`);
+        })
+        .exit()
+        .call(b => {
+          b.transition()
+            .attr("fill", d => colorScale(0))
+            .attr("r", d => radius(0));
+        });
+    }*/
   }
 
   // TODO: Data location: https://ourworldindata.org/coronavirus-source-data
