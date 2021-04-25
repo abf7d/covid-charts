@@ -41,7 +41,6 @@ export class DashboardComponent implements OnInit {
         ).features;
         //  let svg = d3.select(this.chart.nativeElement).append('svg');
         //  this.createChart(countries, svg);
-
       });
 
     this.runStateBubble(svg);
@@ -101,8 +100,7 @@ __proto__: Object*/
       .data(countries)
       .enter()
       .append('path')
-      .attr('d', d =>
-      {
+      .attr('d', (d) => {
         path(d);
       })
       .attr('class', 'country')
@@ -280,7 +278,9 @@ __proto__: Object*/
     // const state = this.http.get('../../../assets/data/observable-countyMap.json');
     // const county = this.http.get('../../assets/data/observable-stateMap.json')
     const usFile = this.http.get('../../assets/data/observable-us.json');
-    const placesFile = this.http.get('../../assets/data/observable-places.json')
+    const placesFile = this.http.get(
+      '../../assets/data/observable-places.json'
+    );
     // const covid = this.http.get(
     //   '../../assets/data/observable-counties-by-date.json'
     // );
@@ -288,20 +288,21 @@ __proto__: Object*/
       '../../assets/data/observable-rawData.json'
     );
 
-    forkJoin([usFile, rawDataFile, placesFile]).subscribe(([us, rawData, places]) => {
-      
-      const countyMap = new Map(
-        topojson
-          .feature(us, (us as any).objects.counties)
-          .features.map((d) => [d.id, d])
-      );
-      const stateMap = new Map(
-        topojson
-          .feature(us, (us as any).objects.states)
-          .features.map((d) => [d.properties.name, d])
-      );
-      this.renderStateBubble(svg, countyMap, stateMap, rawData, us, places);
-    });
+    forkJoin([usFile, rawDataFile, placesFile]).subscribe(
+      ([us, rawData, places]) => {
+        const countyMap = new Map(
+          topojson
+            .feature(us, (us as any).objects.counties)
+            .features.map((d) => [d.id, d])
+        );
+        const stateMap = new Map(
+          topojson
+            .feature(us, (us as any).objects.states)
+            .features.map((d) => [d.properties.name, d])
+        );
+        this.renderStateBubble(svg, countyMap, stateMap, rawData, us, places);
+      }
+    );
   }
 
   mapProjection(coords) {
@@ -320,11 +321,11 @@ __proto__: Object*/
       .translate([width / 2, height / 1.4]) // translate to center of screen. You might have to fiddle with this
       .scale([150]);*/
 
-      const proj = d3.geoAlbersUsa().scale(1300);
-      const albersProjection  = (coords) => {
-        const [x, y] = proj(coords);
-        return [x + 6, y + 54];
-      };
+    const proj = d3.geoAlbersUsa().scale(1300);
+    const albersProjection = (coords) => {
+      const [x, y] = proj(coords);
+      return [x + 6, y + 54];
+    };
 
     var path = d3.geoPath(); //.projection(projection);
 
@@ -349,31 +350,29 @@ __proto__: Object*/
     const dates = Array.from(data.keys()).map((d) => new Date(`${d}T20:00Z`));
 
     svgG
-    .append("path")
-    .datum(topojson.feature(us, us.objects.nation)) //
-    .attr("fill", "#f4f4f4")
-    .attr("stroke", "#999")
-    .attr("stroke-width", 1)
-    .attr("stroke-linejoin", "round")
-    .attr("d", d => {
-      return path(d)
-    });
+      .append('path')
+      .datum(topojson.feature(us, us.objects.nation)) //
+      .attr('fill', '#f4f4f4')
+      .attr('stroke', '#999')
+      .attr('stroke-width', 1)
+      .attr('stroke-linejoin', 'round')
+      .attr('d', (d) => {
+        return path(d);
+      });
 
     // topojson.feature(
-      //       world,
-      //       (world as any).objects.countries
-      //     ).features;
+    //       world,
+    //       (world as any).objects.countries
+    //     ).features;
 
-
-  svgG
-    .append("path")
-    .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
-    .attr("fill", "none")
-    .attr("stroke", "#999")
-    .attr("stroke-width", 0.5)
-    .attr("stroke-linejoin", "round")
-    .attr("d", path);
-
+    svgG
+      .append('path')
+      .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
+      .attr('fill', 'none')
+      .attr('stroke', '#999')
+      .attr('stroke-width', 0.5)
+      .attr('stroke-linejoin', 'round')
+      .attr('d', path);
 
     // const counties = topojson.mesh(us, us.objects.counties, (a, b) => a !== b);
     // svgG
@@ -385,74 +384,104 @@ __proto__: Object*/
     // .attr("stroke-linejoin", "round")
     // .attr("d", path);
 
+    const testDataPoint = Array.from(data.values())[40];
 
-const testDataPoint = Array.from(data.values())[40];
-const unknownCounty = [];
-const bubble = svgG
-.selectAll(".bubble")
-.data(
-  /*data[data.length - 1]*/ (testDataPoint as any).sort((a, b) => +b.cases - +a.cases),
-  d => d.fips || d.county
-)
-.enter()
-.append("path")
-// .attr("transform", d => "translate(" + path.centroid(getLocation(d)) + ")")
-.attr("class", "bubble")
-.attr("fill-opacity", 0.5)
-.attr('fill','red')
-.attr('d', d => {
-  let county = countyMap.get( d.fips || d.county);
-  if (d.county === "New York City") {
-  county = countyMap.get("36061");
-  console.log(`county new york city`, county)
-}
-if(d.county === 'Kansas City') {
-  county = countyMap.get("64105"); // 64155 mptworking
-  console.log(`county kansas city`, county)
-}
-  if(!county) {
-    unknownCounty.push(d);
-    console.log(`fips: ${d.fips}, county: ${d.county}`, d)
-  }
+    const maxCases = Math.max(...(testDataPoint as any).map((a) => a.cases));
+    // const lowerColor = d3
+    // .linear()
+    // .domain([0, maxCases / 2])
+    // .range([`#0f0`, `#FFFF00`]);
 
- 
+    // const upperColor = d3
+    // .linear()
+    // .domain([maxCases / 2, 0])
+    // .range([`#FF0`, `#F00`]);
 
+    var colorScale = d3
+      .scaleLog () //(d3.interpolateInferno)
+      .domain([1, maxCases]) //5000])
+      .range(['yellow', 'purple']);
 
-  const p = path(county);
-  return p;
-})
-// .attr("fill", d => colorScale(0))
-// .attr("r", d => radius(0));
+    const unknownCounty = [];
+    const bubble = svgG
+      .selectAll('.bubble')
+      .data(
+        /*data[data.length - 1]*/ (testDataPoint as any)
+          // .slice(0, 10)
+          .sort((a, b) => +b.cases - +a.cases),
+        (d) => d.fips || d.county
+      )
+      .enter()
+      .append('path')
+      // .attr("transform", d => "translate(" + path.centroid(getLocation(d)) + ")")
+      .attr('class', 'bubble')
+      // .attr('fill-opacity', 0.5)
+      .attr('fill', (d) => {
+       
+          const color = colorScale(+d.cases);
+          // if(+d.cases > 1000){
+          return color;
+          // }
+          return '#fff';
+        /*if( d.cases < maxCases/2) {
+    return lowerColor(d.cases);
+  } else {
+    return upperColor(d.cases);
+  }*/
+      })
+      .attr('d', (d) => {
+        let county = countyMap.get(d.fips || d.county);
+        if (d.county === 'New York City') {
+          county = countyMap.get('36061');
+          console.log(`county new york city`, county);
+        }
+        if (d.county === 'Kansas City') {
+          county = countyMap.get('64105'); // 64155 mptworking
+          console.log(`county kansas city`, county);
+        }
+        if (!county) {
+          unknownCounty.push(d);
+          console.log(`fips: ${d.fips}, county: ${d.county}`, d);
+        }
 
+        const p = path(county);
+        return p;
+      });
+    // .attr("fill", d => colorScale(0))
+    // .attr("r", d => radius(0));
 
-// bubbles first
+    // bubbles first
 
-svgG
-.selectAll("place")
-.data(places)
-.enter()
-.append("circle")
-.attr("class", "place")
-.attr("r", 2.5)
-.attr("transform", function(d) {
-  return "translate(" + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ")";
-});
+    svgG
+      .selectAll('place')
+      .data(places)
+      .enter()
+      .append('circle')
+      .attr('class', 'place')
+      .attr('r', 2.5)
+      .attr('transform', function (d) {
+        return (
+          'translate(' + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ')'
+        );
+      });
 
-svgG
-.selectAll(".place-label")
-.data(places)
-.enter()
-.append("text")
-.attr("class", "place-label")
-.attr("transform", function(d) {
-  return "translate(" + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ")";
-})
-.attr("dy", ".35em")
-.text(function(d) {
-  return d.NAME;
-})
-.attr("x", 6)
-.style("text-anchor", "start");
+    svgG
+      .selectAll('.place-label')
+      .data(places)
+      .enter()
+      .append('text')
+      .attr('class', 'place-label')
+      .attr('transform', function (d) {
+        return (
+          'translate(' + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ')'
+        );
+      })
+      .attr('dy', '.35em')
+      .text(function (d) {
+        return d.NAME;
+      })
+      .attr('x', 6)
+      .style('text-anchor', 'start');
     /*
     const bubble = svgG
     .selectAll(".bubble")
