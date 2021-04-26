@@ -308,6 +308,10 @@ __proto__: Object*/
       { responseType: 'text' } //../../assets/data/observable-rawData.json'
     );
 
+    // population: 'https://github.com/Zoooook/CoronavirusTimelapse/blob/master/static/population.json'
+
+
+
     forkJoin([usFile, rawDataFile, placesFile]).subscribe(
       ([us, rawDataCsv, places]) => {
         // d3.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
