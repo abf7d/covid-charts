@@ -32,7 +32,7 @@
   <a href="https://github.com/nytimes/covid-19-data">https://github.com/nytimes/covid-19-data</a>
 </div>
 <div #chart></div>
-
+<input type="radio" value="sum" name="diff" (click)="changeDisplayType('sum')"> Cumulative <input type="radio" value="daily" name="diff" (click)="changeDisplayType('daily')"> Daily Cases
 <mat-form-field appearance="fill">
   <mat-label>Enter a date range</mat-label>
   <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
@@ -49,7 +49,7 @@
     >Invalid end date</mat-error
   >
 </mat-form-field>
-{{currentDate | date: 'M/d/yyyy'}}
+{{currentDate? (currentDate | date: 'M/d/yyyy') : ''}}
 <p>Selected range: {{ range.value | json }}</p>
 Current Day
 <mat-slider

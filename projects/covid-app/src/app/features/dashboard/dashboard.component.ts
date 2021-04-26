@@ -12,6 +12,7 @@ import { FormGroup, FormControl } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
 import { forkJoin } from 'rxjs';
 import { isLoweredSymbol } from '@angular/compiler';
+import { summaryFileName } from '@angular/compiler/src/aot/util';
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -42,7 +43,7 @@ export class DashboardComponent implements OnInit {
     let svg = d3.select(this.chart.nativeElement).append('svg');
     this.maxDays = 400;
     this.dayInterval = 10;
-    this.currentDay = 0;
+    this.currentDay = 1;
     this.durationMs = 6000;
 
     this.minColor = 'yellow';
@@ -303,15 +304,15 @@ __proto__: Object*/
     //   '../../assets/data/observable-counties-by-date.json'
     // );
     const rawDataFile = this.http.get(
-      'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv', { responseType: 'text' } //../../assets/data/observable-rawData.json'
+      'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv',
+      { responseType: 'text' } //../../assets/data/observable-rawData.json'
     );
 
-    
     forkJoin([usFile, rawDataFile, placesFile]).subscribe(
       ([us, rawDataCsv, places]) => {
         // d3.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
         var rawDataJson = d3.csvParse(rawDataCsv);
-   
+
         const countyMap = new Map(
           topojson
             .feature(us, (us as any).objects.counties)
@@ -322,7 +323,14 @@ __proto__: Object*/
             .feature(us, (us as any).objects.states)
             .features.map((d) => [d.properties.name, d])
         );
-        this.renderStateBubble(svg, countyMap, stateMap, rawDataJson, us, places);
+        this.renderStateBubble(
+          svg,
+          countyMap,
+          stateMap,
+          rawDataJson,
+          us,
+          places
+        );
         //this.loop();
       }
     );
@@ -375,8 +383,8 @@ __proto__: Object*/
     console.log('test', data[0]);
 
     const dates = Array.from(data.keys()).map((d) => new Date(`${d}T20:00Z`));
-   // const sorted = dates.sort((a: any, b: any) => a-b);
-    
+    // const sorted = dates.sort((a: any, b: any) => a-b);
+
     svgG
       .append('path')
       .datum(topojson.feature(us, us.objects.nation)) //
@@ -542,14 +550,31 @@ __proto__: Object*/
   svgG: any;
   data: any;
   places: any;
+  previousDay: number;
+  displayType = 'sum';
+  changeDisplayType(type) {
+    this.displayType = type;
+  }
+  getMaxValue(testDataPoint) {
+    if (this.displayType === 'sum') {
+      return Math.max(...(testDataPoint as any).map((a) => a.cases));
+    }
+    return 1000;
+  }
   drawHeatmap(i: number) {
     const testDataPoint = Array.from(this.data.values())[i];
     const date = Array.from(this.data.keys())[i];
+    const prevDate = this.previousDay
+      ? Array.from(this.data.keys())[this.previousDay]
+      : null;
+    const prevData = new Map(
+      this.data.get(prevDate)?.map((x) => [x.fips || x.county, x])
+    );
     this.currentDate = new Date(`${date}T20:00Z`);
-    if (!i) {
+    if (!i || !testDataPoint) {
       return;
     }
-    const maxCases = Math.max(...(testDataPoint as any).map((a) => a.cases));
+    const maxCases = this.getMaxValue(testDataPoint); //Math.max(...(testDataPoint as any).map((a) => a.cases));
     // const lowerColor = d3
     // .linear()
     // .domain([0, maxCases / 2])
@@ -584,25 +609,34 @@ __proto__: Object*/
       .append('path')
       .attr('class', 'bubble')
       .attr('fill', (d) => {
-        if (+d.cases > mid) {
-          return upperColorScale(+d.cases);
+        if (this.displayType === 'sum') {
+          if (+d.cases > mid) {
+            return upperColorScale(+d.cases);
+          }
+          const color = colorScale(+d.cases);
+          return color;
         }
-        const color = colorScale(+d.cases);
+        const prev = prevData.get(d.fips || d.county);
+      const change = prev? d.cases - (prev as any).cases: 0;
+        if (change > mid) {
+          return upperColorScale(+change);
+        }
+        const color = colorScale(+change);
         return color;
       })
       .attr('d', (d) => {
         let county = this.countyMap.get(d.fips || d.county);
         if (d.county === 'New York City') {
           county = this.countyMap.get('36061');
-          console.log(`county new york city`, county);
+          // console.log(`county new york city`, county);
         }
         if (d.county === 'Kansas City') {
           county = this.countyMap.get('64105'); // 64155 mptworking
-          console.log(`county kansas city`, county);
+          // console.log(`county kansas city`, county);
         }
         if (!county) {
           unknownCounty.push(d);
-          console.log(`fips: ${d.fips}, county: ${d.county}`, d);
+          // console.log(`fips: ${d.fips}, county: ${d.county}`, d);
         }
 
         const p = this.path(county);
@@ -610,10 +644,19 @@ __proto__: Object*/
       });
 
     nodes.attr('fill', (d) => {
-      if (+d.cases > mid) {
-        return upperColorScale(+d.cases);
+      if (this.displayType === 'sum') {
+        if (+d.cases > mid) {
+          return upperColorScale(+d.cases);
+        }
+        const color = colorScale(+d.cases);
+        return color;
       }
-      const color = colorScale(+d.cases);
+      const prev = prevData.get(d.fips || d.county);
+      const change = prev? d.cases - (prev as any).cases: 0;
+      if (change > mid) {
+        return upperColorScale(+change);
+      }
+      const color = colorScale(+change);
       return color;
     });
 
@@ -653,6 +696,8 @@ __proto__: Object*/
       })
       .attr('x', 6)
       .style('text-anchor', 'start');
+
+    this.previousDay = i;
   }
 
   mousedownDay() {
