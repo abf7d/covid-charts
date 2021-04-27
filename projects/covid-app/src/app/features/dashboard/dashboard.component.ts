@@ -307,13 +307,12 @@ __proto__: Object*/
       'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv',
       { responseType: 'text' } //../../assets/data/observable-rawData.json'
     );
+    const populationFile = this.http.get('../../assets/data/population.json');
 
     // population: 'https://github.com/Zoooook/CoronavirusTimelapse/blob/master/static/population.json'
 
-
-
-    forkJoin([usFile, rawDataFile, placesFile]).subscribe(
-      ([us, rawDataCsv, places]) => {
+    forkJoin([usFile, rawDataFile, placesFile, populationFile]).subscribe(
+      ([us, rawDataCsv, places, population]) => {
         // d3.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv")
         var rawDataJson = d3.csvParse(rawDataCsv);
 
@@ -327,6 +326,12 @@ __proto__: Object*/
             .feature(us, (us as any).objects.states)
             .features.map((d) => [d.properties.name, d])
         );
+        this.populationMap = new Map(
+          (population as any).map((x) => [x.us_county_fips || x.subregion, x])
+        );
+        this.maxPop = Math.max(...(population as any).map(p => +p.population));
+        const cases = (rawDataJson as any).map((a) => +a.cases);
+        this.maxCases = cases.reduce((max, v) => max >= v ? max : v, -Infinity);
         this.renderStateBubble(
           svg,
           countyMap,
@@ -556,6 +561,10 @@ __proto__: Object*/
   places: any;
   previousDay: number;
   displayType = 'sum';
+  populationMap;
+  usePopulation: boolean;
+  maxPop: number;
+  maxCases: number;
   changeDisplayType(type) {
     this.displayType = type;
   }
@@ -578,7 +587,7 @@ __proto__: Object*/
     if (!i || !testDataPoint) {
       return;
     }
-    const maxCases = this.getMaxValue(testDataPoint); //Math.max(...(testDataPoint as any).map((a) => a.cases));
+    const maxCases = this.maxCases; //this.getMaxValue(testDataPoint); //Math.max(...(testDataPoint as any).map((a) => a.cases));
     // const lowerColor = d3
     // .linear()
     // .domain([0, maxCases / 2])
@@ -588,12 +597,13 @@ __proto__: Object*/
     // .linear()
     // .domain([maxCases / 2, 0])
     // .range([`#FF0`, `#F00`]);
-    const logMax = Math.log10(maxCases);
+    const topValue = this.usePopulation? maxCases / this.maxPop : maxCases;
+    const logMax = Math.log10(topValue);
     const mid = Math.pow(10, logMax / 2);
-
+    const lower = this.usePopulation? .001 : 1;
     var colorScale = d3
       .scaleLog() //(d3.interpolateInferno)
-      .domain([1, mid]) // maxCases]) //5000])
+      .domain([lower, mid]) // maxCases]) //5000])
       .range([this.minColor, this.midColor]);
 
     var upperColorScale = d3
@@ -613,15 +623,21 @@ __proto__: Object*/
       .append('path')
       .attr('class', 'bubble')
       .attr('fill', (d) => {
+        const pop = this.populationMap.get(d.fips || d.county);
+        let cases = +d.cases;
+        if (pop && this.usePopulation) {
+          cases = cases / +pop.population;
+        }
+
         if (this.displayType === 'sum') {
-          if (+d.cases > mid) {
-            return upperColorScale(+d.cases);
+          if (+cases > mid) {
+            return upperColorScale(+cases);
           }
-          const color = colorScale(+d.cases);
+          const color = colorScale(+cases);
           return color;
         }
         const prev = prevData.get(d.fips || d.county);
-      const change = prev? d.cases - (prev as any).cases: 0;
+        const change = prev ? cases - (prev as any).cases : 0;
         if (change > mid) {
           return upperColorScale(+change);
         }
@@ -648,20 +664,26 @@ __proto__: Object*/
       });
 
     nodes.attr('fill', (d) => {
-      if (this.displayType === 'sum') {
-        if (+d.cases > mid) {
-          return upperColorScale(+d.cases);
+      const pop = this.populationMap.get(d.fips || d.county);
+        let cases = +d.cases;
+        if (pop && this.usePopulation) {
+          cases = cases / +pop.population;
         }
-        const color = colorScale(+d.cases);
+
+        if (this.displayType === 'sum') {
+          if (+cases > mid) {
+            return upperColorScale(+cases);
+          }
+          const color = colorScale(+cases);
+          return color;
+        }
+        const prev = prevData.get(d.fips || d.county);
+        const change = prev ? cases - (prev as any).cases : 0;
+        if (change > mid) {
+          return upperColorScale(+change);
+        }
+        const color = colorScale(+change);
         return color;
-      }
-      const prev = prevData.get(d.fips || d.county);
-      const change = prev? d.cases - (prev as any).cases: 0;
-      if (change > mid) {
-        return upperColorScale(+change);
-      }
-      const color = colorScale(+change);
-      return color;
     });
 
     nodes.exit().remove();
@@ -704,6 +726,7 @@ __proto__: Object*/
     this.previousDay = i;
   }
 
+
   mousedownDay() {
     clearInterval(this.interval);
   }
@@ -720,6 +743,12 @@ __proto__: Object*/
   resetTimer() {
     clearInterval(this.interval);
     this.loop();
+  }
+
+  setByPopulation(usePopulation) {
+    this.usePopulation = usePopulation;
+    clearInterval(this.interval);
+    this.drawHeatmap(this.currentDay);
   }
   interval;
   loop() {
