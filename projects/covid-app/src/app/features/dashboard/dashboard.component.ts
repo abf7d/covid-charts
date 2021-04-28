@@ -21,6 +21,7 @@ import { summaryFileName } from '@angular/compiler/src/aot/util';
 })
 export class DashboardComponent implements OnInit {
   @ViewChild('chart', { static: true }) chart: ElementRef;
+  @ViewChild('variantChart', {static: true}) variantChart: ElementRef;
   range = new FormGroup({
     start: new FormControl(),
     end: new FormControl(),
@@ -50,6 +51,7 @@ export class DashboardComponent implements OnInit {
     this.midColor = 'purple';
     this.maxColor = 'green';
 
+    let variantChartSvg = d3.select(this.variantChart.nativeElement).append('svg');
     this.http
       .get(
         '../../../assets/data/countries.json' /*https://gist.githubusercontent.com/GordyD/49654901b07cb764c34f/raw/27eff6687f677c984a11f25977adaa4b9332a2a9/countries-and-states.json'*/ /*('https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-50m.json'*/
@@ -64,7 +66,7 @@ export class DashboardComponent implements OnInit {
       });
 
     this.runStateBubble(svg);
-    this.getLineage(svg);
+    this.getLineage(variantChartSvg);
   }
 
   formatLabel(value: number) {
@@ -84,9 +86,37 @@ export class DashboardComponent implements OnInit {
     this.variants = [
       'B.1.1.7', 'B.1.351', 'B.1.427', 'B.1.429', 'P.1', 'B.1.526', 'B.1.526','B.1.526.1', 'B.1.526.2', 'B.1.617', 'P.2'
     ]
-    this.http.get('https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&pangolin_lineage=B.1.1.7&timestamp=449880&ndays=60').subscribe( x => {
-      console.log('lineage', x);
+    const usFile = this.http.get('../../assets/data/observable-us.json');
+    const variantData = this.http.get('https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&pangolin_lineage=B.1.1.7&timestamp=449880&ndays=60');
+   
+    forkJoin([usFile, variantData]).subscribe(([us, variant]) => {
+      console.log('lineage', variant);
+      this.renderVariantMap(svg, us, variant);
     });
+  }
+  renderVariantMap(svg, us, variantData) {
+    const width = 1000;
+    const height = 700;
+    var path = d3.geoPath();
+    let svgG = svg.attr('width', width).attr('height', height).append('g');
+    svgG
+      .append('path')
+      .datum(topojson.feature(us, us.objects.nation)) //
+      .attr('fill', '#f4f4f4')
+      .attr('stroke', '#999')
+      .attr('stroke-width', 1)
+      .attr('stroke-linejoin', 'round')
+      .attr('d', (d) => {
+        return path(d);
+      });
+    svgG
+      .append('path')
+      .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
+      .attr('fill', 'none')
+      .attr('stroke', '#999')
+      .attr('stroke-width', 0.5)
+      .attr('stroke-linejoin', 'round')
+      .attr('d', path);
   }
   createChart(countries: any[], svg) {
     const width = 1000;
@@ -315,16 +345,12 @@ __proto__: Object*/
     const placesFile = this.http.get(
       '../../assets/data/observable-places.json'
     );
-    // const covid = this.http.get(
-    //   '../../assets/data/observable-counties-by-date.json'
-    // );
+    
     const rawDataFile = this.http.get(
       'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv',
       { responseType: 'text' } //../../assets/data/observable-rawData.json'
     );
     const populationFile = this.http.get('../../assets/data/population.json');
-
-    // population: 'https://github.com/Zoooook/CoronavirusTimelapse/blob/master/static/population.json'
 
     forkJoin([usFile, rawDataFile, placesFile, populationFile]).subscribe(
       ([us, rawDataCsv, places, population]) => {
@@ -355,7 +381,6 @@ __proto__: Object*/
           us,
           places
         );
-        //this.loop();
       }
     );
   }
@@ -372,10 +397,6 @@ __proto__: Object*/
     svg.select('*').remove();
     let svgG = svg.attr('width', width).attr('height', height).append('g');
     this.svgG = svgG;
-    /*var projection = d3
-      .geoMercator()
-      .translate([width / 2, height / 1.4]) // translate to center of screen. You might have to fiddle with this
-      .scale([150]);*/
 
     const proj = d3.geoAlbersUsa().scale(1300);
     const albersProjection = (coords) => {
@@ -407,7 +428,6 @@ __proto__: Object*/
     console.log('test', data[0]);
 
     const dates = Array.from(data.keys()).map((d) => new Date(`${d}T20:00Z`));
-    // const sorted = dates.sort((a: any, b: any) => a-b);
 
     svgG
       .append('path')
@@ -420,11 +440,6 @@ __proto__: Object*/
         return path(d);
       });
 
-    // topojson.feature(
-    //       world,
-    //       (world as any).objects.countries
-    //     ).features;
-
     svgG
       .append('path')
       .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
@@ -434,139 +449,8 @@ __proto__: Object*/
       .attr('stroke-linejoin', 'round')
       .attr('d', path);
 
-    // const counties = topojson.mesh(us, us.objects.counties, (a, b) => a !== b);
-    // svgG
-    // .append("path")
-    // .datum(topojson.mesh(us, us.objects.counties, (a, b) => a !== b))
-    // .attr("fill", "none")
-    // .attr("stroke", "#999")
-    // .attr("stroke-width", 0.5)
-    // .attr("stroke-linejoin", "round")
-    // .attr("d", path);
-
     this.drawHeatmap(0);
-    // const testDataPoint = Array.from(data.values())[40];
-
-    // const maxCases = Math.max(...(testDataPoint as any).map((a) => a.cases));
-
-    // var colorScale = d3
-    //   .scaleLog () //(d3.interpolateInferno)
-    //   .domain([1, maxCases]) //5000])
-    //   .range(['yellow', 'purple']);
-
-    // const unknownCounty = [];
-    // const bubble = svgG
-    //   .selectAll('.bubble')
-    //   .data(
-    //     /*data[data.length - 1]*/ (testDataPoint as any)
-    //       // .slice(0, 10)
-    //       .sort((a, b) => +b.cases - +a.cases),
-    //     (d) => d.fips || d.county
-    //   )
-    //   .enter()
-    //   .append('path')
-    //   .attr('class', 'bubble')
-    //   .attr('fill', (d) => {
-    //       const color = colorScale(+d.cases);
-    //       return color;
-    //   })
-    //   .attr('d', (d) => {
-    //     let county = countyMap.get(d.fips || d.county);
-    //     if (d.county === 'New York City') {
-    //       county = countyMap.get('36061');
-    //       console.log(`county new york city`, county);
-    //     }
-    //     if (d.county === 'Kansas City') {
-    //       county = countyMap.get('64105'); // 64155 mptworking
-    //       console.log(`county kansas city`, county);
-    //     }
-    //     if (!county) {
-    //       unknownCounty.push(d);
-    //       console.log(`fips: ${d.fips}, county: ${d.county}`, d);
-    //     }
-
-    //     const p = path(county);
-    //     return p;
-    //   });
-    // .attr("fill", d => colorScale(0))
-    // .attr("r", d => radius(0));
-
-    // bubbles first
     this.places = places;
-    // svgG
-    //   .selectAll('place')
-    //   .data(places)
-    //   .enter()
-    //   .append('circle')
-    //   .attr('class', 'place')
-    //   .attr('r', 2.5)
-    //   .attr('transform', function (d) {
-    //     return (
-    //       'translate(' + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ')'
-    //     );
-    //   });
-
-    // svgG
-    //   .selectAll('.place-label')
-    //   .data(places)
-    //   .enter()
-    //   .append('text')
-    //   .attr('class', 'place-label')
-    //   .attr('transform', function (d) {
-    //     return (
-    //       'translate(' + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ')'
-    //     );
-    //   })
-    //   .attr('dy', '.35em')
-    //   .text(function (d) {
-    //     return d.NAME;
-    //   })
-    //   .attr('x', 6)
-    //   .style('text-anchor', 'start');
-    /*
-    const bubble = svgG
-    .selectAll(".bubble")
-    .data(
-      data[data.length - 1].sort((a, b) => +b.cases - +a.cases),
-      d => d.fips || d.county
-    )
-    .enter()
-    .append("circle")
-    .attr("transform", d => "translate(" + path.centroid(getLocation(d)) + ")")
-    .attr("class", "bubble")
-    .attr("fill-opacity", 0.5)
-    .attr("fill", d => colorScale(0))
-    .attr("r", d => radius(0));
-
-  bubble.append("title");
-
-  svgG
-    .selectAll("place")
-    .data(places)
-    .enter()
-    .append("circle")
-    .attr("class", "place")
-    .attr("r", 2.5)
-    .attr("transform", function(d) {
-      return "translate(" + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ")";
-    });
-
-    svgG
-    .selectAll(".place-label")
-    .data(places)
-    .enter()
-    .append("text")
-    .attr("class", "place-label")
-    .attr("transform", function(d) {
-      return "translate(" + albersProjection([+d.LONGITUDE, +d.LATITUDE]) + ")";
-    })
-    .attr("dy", ".35em")
-    .text(function(d) {
-      return d.NAME;
-    })
-    .attr("x", 6)
-    .style("text-anchor", "start");
-*/
   }
 
   countyMap: any;

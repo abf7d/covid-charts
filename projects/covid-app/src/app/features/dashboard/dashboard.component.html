@@ -107,7 +107,7 @@ Duration (ms)
   [(ngModel)]="durationMs"
 ></mat-slider>
 <div>
-  <label>Variant {{ selectedVariant }}</label>
+  <label>Variant</label>
   <select
     [ngModel]="selectedVariant"
     (ngModelChange)="setVariant($event)"
@@ -116,6 +116,7 @@ Duration (ms)
       {{ variant }}
     </option>
   </select>
+  {{ selectedVariant }}
 </div>
 
 <input
@@ -139,3 +140,4 @@ Duration (ms)
   [(colorPicker)]="maxColor"
 />
 
+<div #variantChart></div>
