@@ -75,7 +75,10 @@ export class DashboardComponent implements OnInit {
   }
   selected: any;
   getLineage(svg) {
-    this.http.get('https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&&mutations=S:E484K&timestamp=449880&ndays=60').subscribe( x => {
+    const lineages = [
+      'B.1.1.7', 'B.1.351', 'B.1.427', 'B.1.429', 'P.1', 'B.1.526', 'B.1.526','B.1.526.1', 'B.1.526.2', 'B.1.617', 'P.2'
+    ]
+    this.http.get('https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&pangolin_lineage=B.1.1.7&timestamp=449880&ndays=60').subscribe( x => {
       console.log('lineage', x);
     });
   }
