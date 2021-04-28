@@ -63,6 +63,7 @@ export class DashboardComponent implements OnInit {
       });
 
     this.runStateBubble(svg);
+    this.getLineage(svg);
   }
 
   formatLabel(value: number) {
@@ -72,6 +73,11 @@ export class DashboardComponent implements OnInit {
     return value;
   }
   selected: any;
+  getLineage(svg) {
+    this.http.get('https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&&mutations=S:E484K&timestamp=449880&ndays=60').subscribe( x => {
+      console.log('lineage', x);
+    });
+  }
   createChart(countries: any[], svg) {
     const width = 1000;
     const height = 700;
