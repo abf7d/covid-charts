@@ -51,7 +51,8 @@
   Daily Cases
 </div>
 <div>
-  <input type="checkbox" (change)="setByPopulation($event.target.checked)" /> By Population
+  <input type="checkbox" (change)="setByPopulation($event.target.checked)" /> By
+  Population
 </div>
 <mat-form-field appearance="fill">
   <mat-label>Enter a date range</mat-label>
@@ -105,6 +106,17 @@ Duration (ms)
   [max]="10000"
   [(ngModel)]="durationMs"
 ></mat-slider>
+<div>
+  <label>Variant {{ selectedVariant }}</label>
+  <select
+    [ngModel]="selectedVariant"
+    (ngModelChange)="setVariant($event)"
+  >
+    <option *ngFor="let variant of variants" [ngValue]="variant">
+      {{ variant }}
+    </option>
+  </select>
+</div>
 
 <input
   (cpToggleChange)="changeColor($event)"
@@ -126,3 +138,4 @@ Duration (ms)
   [style.background]="maxColor"
   [(colorPicker)]="maxColor"
 />
+
