@@ -51,7 +51,7 @@ export class DashboardComponent implements OnInit {
     this.midColor = 'purple';
     this.maxColor = 'green';
 
-    let variantChartSvg = d3.select(this.variantChart.nativeElement).append('svg');
+    this.variantChartSvg = d3.select(this.variantChart.nativeElement).append('svg');
     this.http
       .get(
         '../../../assets/data/countries.json' /*https://gist.githubusercontent.com/GordyD/49654901b07cb764c34f/raw/27eff6687f677c984a11f25977adaa4b9332a2a9/countries-and-states.json'*/ /*('https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-50m.json'*/
@@ -66,9 +66,9 @@ export class DashboardComponent implements OnInit {
       });
 
     this.runStateBubble(svg);
-    this.getLineage(variantChartSvg);
+    this.getLineage(this.variantChartSvg);
   }
-
+  variantChartSvg;
   formatLabel(value: number) {
     if (value >= 1000) {
       return Math.round(value / 1000) + 'k';
@@ -80,14 +80,27 @@ export class DashboardComponent implements OnInit {
   selectedVariant;
   setVariant(variant) {
     this.selectedVariant = variant;
+    this.compileChart(this.variantChartSvg);
   }
   getLineage(svg) {
     //https://outbreak.info/location-reports?loc=USA
     this.variants = [
       'B.1.1.7', 'B.1.351', 'B.1.427', 'B.1.429', 'P.1', 'B.1.526', 'B.1.526','B.1.526.1', 'B.1.526.2', 'B.1.617', 'P.2'
     ]
+    this.selectedVariant = this.variantChart[0];
+    this.compileChart(svg);
+    // const usFile = this.http.get('../../assets/data/observable-us.json');
+    // const variantData = this.http.get('https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&pangolin_lineage=B.1.1.7&timestamp=449880&ndays=60');
+   
+    // forkJoin([usFile, variantData]).subscribe(([us, variant]) => {
+    //   console.log('lineage', variant);
+    //   this.renderVariantMap(svg, us, variant);
+    // });
+  }
+
+  compileChart(svg) {
     const usFile = this.http.get('../../assets/data/observable-us.json');
-    const variantData = this.http.get('https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&pangolin_lineage=B.1.1.7&timestamp=449880&ndays=60');
+    const variantData = this.http.get(`https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&pangolin_lineage=${this.selectedVariant}&timestamp=449880&ndays=60`);
    
     forkJoin([usFile, variantData]).subscribe(([us, variant]) => {
       console.log('lineage', variant);
@@ -128,6 +141,16 @@ export class DashboardComponent implements OnInit {
   //   .scale([150]);
 
   // var path2 = d3.geoPath().projection(projection);
+
+  var colorScale = d3
+  .scaleLinear() //.scaleLog() //(d3.interpolateInferno)
+  .domain([0, 50]) // maxCases]) //5000])
+  .range(['white', this.midColor]);
+
+  var upperColorScale = d3
+      .scaleLog() //(d3.interpolateInferno)
+      .domain([50, 100]) // maxCases]) //5000])
+      .range([this.midColor, this.maxColor]);
     
 const states =  topojson.feature(us, us.objects.states).features;
       svgG
@@ -146,8 +169,16 @@ const states =  topojson.feature(us, us.objects.states).features;
       .attr('stroke-linejoin', 'round')
       // .attr('d', path)
       .style('fill', d => {
-        const val = variantMap.get(d.properties.name);
-        
+        const val = variantMap.get(d.properties.name) as any;
+        const percentVariant = val.cum_lineage_count / val.cum_total_count * 100;
+        if (percentVariant < 50) {
+        return colorScale(percentVariant);
+        } else {
+          return upperColorScale(percentVariant);
+        }
+
+//         cum_lineage_count: 607
+// cum_total_count: 2052
       })
   }
   createChart(countries: any[], svg) {
