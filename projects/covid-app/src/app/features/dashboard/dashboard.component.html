@@ -108,6 +108,10 @@ Duration (ms)
 ></mat-slider>
 <div>
   <label>Variant</label>
+  <div class="d-flex">
+    <button [ngClass]="{selected: selectedVariant === variant}" (click)="setVariant(variant)" *ngFor="let variant of variants">{{variant}}</button>
+  </div>
+  
   <select
     [ngModel]="selectedVariant"
     (ngModelChange)="setVariant($event)"

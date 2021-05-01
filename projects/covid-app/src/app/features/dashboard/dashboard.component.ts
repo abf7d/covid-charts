@@ -85,7 +85,7 @@ export class DashboardComponent implements OnInit {
   getLineage(svg) {
     //https://outbreak.info/location-reports?loc=USA
     this.variants = [
-      'B.1.1.7', 'B.1.351', 'B.1.427', 'B.1.429', 'P.1', 'B.1.526', 'B.1.526','B.1.526.1', 'B.1.526.2', 'B.1.617', 'P.2'
+      'B.1.1.7', 'B.1.351', 'B.1.427', 'B.1.429', 'P.1', 'B.1.526', 'B.1.526.1', 'B.1.526.2', 'B.1.617', 'P.2'
     ]
     this.selectedVariant = this.variantChart[0];
     this.compileChart(svg);
