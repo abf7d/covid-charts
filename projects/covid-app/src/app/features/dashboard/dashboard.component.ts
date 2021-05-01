@@ -90,7 +90,7 @@ export class DashboardComponent implements OnInit {
     this.selectedVariant = this.variantChart[0];
     this.compileChart(svg);
     // const usFile = this.http.get('../../assets/data/observable-us.json');
-    // const variantData = this.http.get('https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&pangolin_lineage=B.1.1.7&timestamp=449880&ndays=60');
+    // const variantData = this.http.get('https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&pangolin_lineage=B.1.1.7&timestamp=449880&ndays=60'); 449972 449972
    
     // forkJoin([usFile, variantData]).subscribe(([us, variant]) => {
     //   console.log('lineage', variant);
@@ -104,15 +104,18 @@ export class DashboardComponent implements OnInit {
    
     forkJoin([usFile, variantData]).subscribe(([us, variant]) => {
       console.log('lineage', variant);
-      this.renderVariantMap(svg, us, variant);
+      const states =  topojson.feature(us, (us as any) .objects.states).features;
+      this.renderVariantMap(svg, us, variant, states);
     });
   }
-  renderVariantMap(svg, us, variantData) {
+  renderVariantMap(svg, us, variantData, states) {
     const width = 1000;
     const height = 700;
     var path = d3.geoPath();
-    let svgG = svg.attr('width', width).attr('height', height).append('g');
+    svg.selectAll('.variant').remove();
+    let svgG = svg.attr('width', width).attr('height', height).append('g').classed('variant', true);
     const variantMap = new Map(variantData.results.map(x => [x.name, x]))
+
     svgG
       .append('path')
       .datum(topojson.feature(us, us.objects.nation)) //
@@ -151,8 +154,12 @@ export class DashboardComponent implements OnInit {
       .scaleLog() //(d3.interpolateInferno)
       .domain([50, 100]) // maxCases]) //5000])
       .range([this.midColor, this.maxColor]);
-    
-const states =  topojson.feature(us, us.objects.states).features;
+
+      if (this.selected) {
+        states.splice(states.indexOf(this.selected), 1);
+        states.push(this.selected);
+      }
+    const _this = this;
       svgG
       .selectAll('path.state')
       // .append('g')
@@ -171,15 +178,90 @@ const states =  topojson.feature(us, us.objects.states).features;
       .style('fill', d => {
         const val = variantMap.get(d.properties.name) as any;
         const percentVariant = val.cum_lineage_count / val.cum_total_count * 100;
+        d.variantData = val;
         if (percentVariant < 50) {
         return colorScale(percentVariant);
         } else {
           return upperColorScale(percentVariant);
         }
 
-//         cum_lineage_count: 607
-// cum_total_count: 2052
       })
+      .on('mousedown', (event, d) => {
+        const node = d3.select(event.currentTarget);
+
+        if (this.selected === d) {
+          d.selected = false;
+        } else {
+          states.forEach((c) => (c.selected = false));
+          this.selected = d;
+          d.selected = !d.selected;
+          console.log(d);
+          console.log(event);
+          console.log(d.properties.name);
+          this.selectedNode = node;
+
+        }
+        this.renderVariantMap(svg, us, variantData, states)
+      })
+      .each(function (d) {
+        const node = d3.select(this);
+        var t = d3.transition().duration(100).ease(d3.easeLinear);
+        if (d.selected) {
+          var bounds = path.bounds(d),
+            dx = bounds[1][0] - bounds[0][0],
+            dy = bounds[1][1] - bounds[0][1],
+            x = (bounds[0][0] + bounds[1][0]) / 2,
+            y = (bounds[0][1] + bounds[1][1]) / 2,
+            scale = 0.9 / Math.max(dx / width, dy / height),
+            translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+          node
+            .transition(t)
+            // .delay(700)
+            .attr(
+              'transform',
+              `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
+            );
+        } else if (_this.selected == d) {
+          var bounds = path.bounds(d),
+            dx = bounds[1][0] - bounds[0][0],
+            dy = bounds[1][1] - bounds[0][1],
+            x = (bounds[0][0] + bounds[1][0]) / 2,
+            y = (bounds[0][1] + bounds[1][1]) / 2,
+            scale = 0.9 / Math.max(dx / width, dy / height),
+            translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+          node
+            .attr(
+              'transform',
+              `translate(${translate[0]}, ${translate[1]}) scale(${scale})`
+            )
+            .transition(t)
+            // .delay(700)
+            .attr('transform', `translate(0, 0) scale(1)`);
+          _this.selected = null;
+        }
+      });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   }
   createChart(countries: any[], svg) {
     const width = 1000;
