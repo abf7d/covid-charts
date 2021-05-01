@@ -99,6 +99,7 @@ export class DashboardComponent implements OnInit {
     const height = 700;
     var path = d3.geoPath();
     let svgG = svg.attr('width', width).attr('height', height).append('g');
+    const variantMap = new Map(variantData.results.map(x => [x.name, x]))
     svgG
       .append('path')
       .datum(topojson.feature(us, us.objects.nation)) //
@@ -109,14 +110,45 @@ export class DashboardComponent implements OnInit {
       .attr('d', (d) => {
         return path(d);
       });
-    svgG
+    // svgG
+    //   .append('path')
+    //   .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
+    //   .attr('fill', 'none')
+    //   .attr('stroke', '#999')
+    //   .attr('stroke-width', 0.5)
+    //   .attr('stroke-linejoin', 'round')
+    //   .attr('d', path)
+    //   .style('fill', d => {
+    //     variantMap.get(d.state);
+    //   })
+
+  //   var projection = d3
+  //   .geoMercator()
+  //   .translate([width / 2, height / 1.4]) // translate to center of screen. You might have to fiddle with this
+  //   .scale([150]);
+
+  // var path2 = d3.geoPath().projection(projection);
+    
+const states =  topojson.feature(us, us.objects.states).features;
+      svgG
+      .selectAll('path.state')
+      // .append('g')
+      .data(states)
+      .enter()
       .append('path')
-      .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
+      .classed('state', true)
+      .attr('d', (d) => {
+        return path(d);
+      })
       .attr('fill', 'none')
       .attr('stroke', '#999')
       .attr('stroke-width', 0.5)
       .attr('stroke-linejoin', 'round')
-      .attr('d', path);
+      // .attr('d', path)
+      .style('fill', d => {
+        const val = variantMap.get(d.properties.name);
+        
+      })
   }
   createChart(countries: any[], svg) {
     const width = 1000;
