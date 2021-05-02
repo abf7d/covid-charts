@@ -102,6 +102,9 @@ export class DashboardComponent implements OnInit {
     const usFile = this.http.get('../../assets/data/observable-us.json');
     const variantData = this.http.get(`https://api.outbreak.info/genomics/lineage-by-sub-admin-most-recent?location_id=USA&pangolin_lineage=${this.selectedVariant}&timestamp=449880&ndays=60`);
    
+    // variant data
+    // https://www.gisaid.org/hcov19-variants/
+    // https://covariants.org/per-country
     forkJoin([usFile, variantData]).subscribe(([us, variant]) => {
       console.log('lineage', variant);
       const states =  topojson.feature(us, (us as any) .objects.states).features;
